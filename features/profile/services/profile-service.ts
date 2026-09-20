@@ -11,7 +11,7 @@ export const profileService = {
   async updateUserProfile(payload: Partial<Pick<UserProfile, 'name' | 'firstName' | 'lastName' | 'email' | 'phone' | 'avatar'>>) {
     return api.patch<UserProfile>('/users/me', payload)
   },
-  async updateVendorProfile(payload: Partial<Pick<VendorProfile, 'businessName' | 'legalName' | 'businessType' | 'email' | 'phone' | 'address'>>) {
+  async updateVendorProfile(payload: Partial<Pick<VendorProfile, 'businessName' | 'legalName' | 'businessType' | 'description' | 'email' | 'phone' | 'website' | 'address'>>) {
     return api.patch<VendorProfile>('/vendors/me', payload)
   },
   async changePassword(currentPassword: string, newPassword: string) {

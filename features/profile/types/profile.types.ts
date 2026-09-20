@@ -20,8 +20,10 @@ export type VendorProfile = {
   businessName: string
   legalName?: string
   businessType?: string
+  description?: string
   email?: string
   phone?: string
+  website?: string
   address?: string
   status: 'PENDING' | 'UNDER_REVIEW' | 'APPROVED' | 'REJECTED' | 'SUSPENDED' | 'BLOCKED'
   verificationStatus: 'UNVERIFIED' | 'PENDING' | 'VERIFIED' | 'REJECTED'

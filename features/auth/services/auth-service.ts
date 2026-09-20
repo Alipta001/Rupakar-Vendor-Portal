@@ -46,9 +46,14 @@ export const authService = {
     try {
       if (request.password !== request.confirmPassword) return { data: { sellerId: '', nextStep: '' }, error: 'Passwords do not match' }
       if (!request.termsAccepted) return { data: { sellerId: '', nextStep: '' }, error: 'You must accept the seller terms' }
-      const result = await api.post<BackendAuth>('/auth/register', { name: request.ownerName, email: request.email, password: request.password })
+      const result = await api.post<BackendAuth>('/auth/register-seller', {
+        name: request.ownerName,
+        email: request.email,
+        password: request.password,
+        storeName: request.storeName,
+        mobile: request.mobile,
+      })
       setAccessToken(result.accessToken)
-      await api.post('/vendors/apply', { businessName: request.storeName, legalName: request.storeName, email: request.email, phone: request.mobile })
       return { data: { sellerId: result.user.id, nextStep: 'verify' } }
     } catch (error) { return { data: { sellerId: '', nextStep: '' }, error: unwrapError(error) } }
   },

@@ -15,6 +15,8 @@ export const setAccessToken = (token: string | null) => {
   authStorage.setAccessToken(token)
 }
 
+const isFormData = (body: unknown): body is FormData => typeof FormData !== 'undefined' && body instanceof FormData
+
 const parseResponse = async <T>(response: Response): Promise<T> => {
   const payload = await response.json().catch(() => ({}))
   if (!response.ok) {
@@ -39,7 +41,9 @@ const refreshAccessToken = async () => {
 export async function apiRequest<T>(path: string, init: RequestInit = {}, retry = true): Promise<T> {
   if (!accessToken) accessToken = readStoredToken()
   const headers = new Headers(init.headers)
-  headers.set('Content-Type', 'application/json')
+  if (!isFormData(init.body) && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json')
+  }
   if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`)
 
   const response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers, credentials: 'include' })
@@ -56,7 +60,9 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}, retry 
 export const api = {
   get: <T>(path: string) => apiRequest<T>(path),
   post: <T>(path: string, body?: unknown, headers?: HeadersInit) => apiRequest<T>(path, { method: 'POST', body: body === undefined ? undefined : JSON.stringify(body), headers }),
+  postMultipart: <T>(path: string, body: FormData) => apiRequest<T>(path, { method: 'POST', body }),
   patch: <T>(path: string, body: unknown) => apiRequest<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
+  delete: <T>(path: string) => apiRequest<T>(path, { method: 'DELETE' }),
 }
 
 export { API_BASE_URL }

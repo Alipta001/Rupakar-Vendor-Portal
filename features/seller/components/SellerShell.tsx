@@ -1,9 +1,10 @@
  'use client'
 
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Bell, ChevronDown, ChevronRight, CircleHelp, Menu, MoreHorizontal, Search, X } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import { managementNavigation, workspaceNavigation } from '@/config/navigation'
+import { api } from '@/lib/api/client'
 
 const titles: Record<string, string> = { '/dashboard': 'Overview', '/products': 'Products', '/inventory': 'Inventory', '/orders': 'Orders', '/finance': 'Finance', '/reviews': 'Reviews', '/analytics': 'Analytics', '/store': 'My Store', '/verification': 'Verification', '/notifications': 'Notifications', '/support': 'Support', '/settings': 'Settings', '/profile': 'Profile' }
 
@@ -11,6 +12,8 @@ export function SellerShell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const [open, setOpen] = useState(false)
+  const [unreadCount, setUnreadCount] = useState<number>()
+  useEffect(() => { let active = true; api.get<{ unreadCount: number }>('/notifications/unread-count').then((result) => { if (active) setUnreadCount(result.unreadCount) }).catch(() => undefined); return () => { active = false } }, [pathname])
   const title = titles[pathname] || (pathname.startsWith('/products/') ? 'Product detail' : pathname.startsWith('/orders/') ? 'Order detail' : 'Seller Studio')
   const navigate = (href: string) => { setOpen(false); router.push(href) }
       return (
@@ -56,7 +59,7 @@ export function SellerShell({ children }: { children: ReactNode }) {
                 >
                   <item.icon />
                   <span>{item.label}</span>
-                  {item.count && <em className="alert-count">{item.count}</em>}
+                  {item.href === '/notifications' && unreadCount !== undefined ? <em className="alert-count">{unreadCount}</em> : item.count && <em className="alert-count">{item.count}</em>}
                 </button>
               ))}
             </nav>

@@ -19,11 +19,16 @@ export type ProductVariant = {
 export type ProductImage = {
   _id?: string
   id?: string
+  productId?: string
   storageKey: string
   url: string
   altText?: string
   sortOrder?: number
   isPrimary?: boolean
+  width?: number | null
+  height?: number | null
+  fileSize?: number | null
+  mimeType?: string | null
   status?: 'ACTIVE' | 'INACTIVE'
 }
 
@@ -80,6 +85,16 @@ export const productService = {
   create: (payload: ProductInput) => api.post<SellerProduct>('/vendor/products', payload),
   update: (id: string, payload: Partial<ProductInput> & { status?: ProductStatus }) => api.patch<SellerProduct>(`/vendor/products/${id}`, payload),
   submit: (id: string) => api.post<SellerProduct>(`/vendor/products/${id}/submit`, {}),
+  uploadImage: (productId: string, file: File, metadata: { altText?: string; sortOrder?: number; isPrimary?: boolean } = {}) => {
+    const formData = new FormData()
+    formData.append('image', file)
+    if (metadata.altText !== undefined) formData.append('altText', metadata.altText)
+    if (metadata.sortOrder !== undefined) formData.append('sortOrder', String(metadata.sortOrder))
+    if (metadata.isPrimary !== undefined) formData.append('isPrimary', String(metadata.isPrimary))
+    return api.postMultipart<ProductImage>(`/vendor/products/${productId}/images`, formData)
+  },
+  deleteImage: (productId: string, imageId: string) => api.delete<{ deleted: boolean; imageId: string }>(`/vendor/products/${productId}/images/${imageId}`),
+  updateImage: (productId: string, imageId: string, payload: { altText?: string; sortOrder?: number; isPrimary?: boolean }) => api.patch<ProductImage>(`/vendor/products/${productId}/images/${imageId}`, payload),
   inventory: (params: { page?: number; limit?: number } = {}) => api.get<InventoryPage>(`/vendor/inventory${query(params)}`),
   adjustInventory: (variantId: string, delta: number, reason = 'SELLER_ADJUSTMENT') => api.patch<InventoryItem>(`/vendor/inventory/${variantId}`, { delta, reason }),
   categories: () => api.get<LookupPage<LookupItem>>('/categories?limit=100'),

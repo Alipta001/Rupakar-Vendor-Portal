@@ -130,10 +130,10 @@ h1 span { color: var(--orange); }
 .app-shell.theme-white .workspace { background: #5f4031; }
 .app-shell.theme-white .workspace > .welcome-row h1,
 .app-shell.theme-white .workspace > .welcome-row .subtle,
-.app-shell.theme-white .workspace > .welcome-row .eyebrow { color: #fff8f0; }
-.app-shell.theme-white .app-footer { color: #f0d8c8; }
-.app-shell.theme-white .footer-link { color: #ffd0b4; }
-.app-shell.theme-white .live-dot { background: #b7e2c7; }
+.app-shell.theme-white .workspace > .welcome-row .eyebrow { color: #292b28; }
+.app-shell.theme-white .app-footer { color: #5f6861; }
+.app-shell.theme-white .footer-link { color: #b94d25; }
+.app-shell.theme-white .live-dot { background: #32a26a; }
 .app-shell.theme-brown,
 .app-shell.theme-brown .app-content,
 .app-shell.theme-brown .workspace { background: #3f2a22; }
@@ -182,6 +182,102 @@ h1 span { color: var(--orange); }
 .field textarea { min-height: 112px; }
 .editor-steps button small { color: #737a73; }
 .editor-steps button:not(.active):hover { background: #f8f5f1; color: var(--foreground); }
+
+.product-form {
+  color: var(--foreground);
+}
+.product-form .panel-heading h2,
+.product-form .panel-heading p,
+.product-form .subtle,
+.product-form .image-grid,
+.product-form .empty-state,
+.product-form .auth-notice,
+.product-form label,
+.product-form label > span,
+.product-form input,
+.product-form textarea,
+.product-form select,
+.product-form button,
+.product-form .upload-box,
+.product-form .upload-box b,
+.product-form .upload-box span,
+.product-form .badge,
+.product-form .status-badge {
+  color: var(--foreground) !important;
+}
+.product-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 700;
+}
+.product-form label em {
+  color: var(--orange-dark);
+  font-style: normal;
+}
+.product-form input,
+.product-form textarea,
+.product-form select {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid #d8d0c8;
+  border-radius: 8px;
+  background: #fff;
+  color: #19211d;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.4;
+  box-shadow: inset 0 1px 0 rgba(16, 24, 40, 0.02);
+}
+.product-form textarea { min-height: 110px; resize: vertical; }
+.product-form input::placeholder,
+.product-form textarea::placeholder,
+.product-form select::placeholder {
+  color: #6f776f !important;
+  opacity: 1;
+}
+.product-form input:focus,
+.product-form textarea:focus,
+.product-form select:focus {
+  border-color: #d76437;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(215, 100, 55, 0.14);
+  outline: none;
+}
+.product-form select option {
+  color: #1f2724;
+  background: #fff;
+}
+.product-form .upload-box {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 160px;
+  border: 1px dashed #d7cabd;
+  border-radius: 12px;
+  background: #fffaf7;
+  padding: 20px;
+}
+.product-form .upload-box span,
+.product-form .upload-box .subtle {
+  color: #5f6861;
+  line-height: 1.5;
+}
+.product-form .auth-notice.error {
+  color: #9d2f2f !important;
+}
+.product-form .auth-notice.success {
+  color: #216848 !important;
+}
+.product-form .secondary-button:disabled,
+.product-form .primary-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 .panel-heading h2, .notification-copy h3, .verification-hero h2, .verification-note h2 { color: var(--foreground); }
 .notification-copy h3 { font-size: 14px; line-height: 1.35; }
 .notification-copy p, .verification-hero p, .verification-note p { color: #667069; line-height: 1.55; }
@@ -269,9 +365,9 @@ h1 span { color: var(--orange); }
 .app-shell.theme-white .quick-action-grid button > svg { color: #d76437 !important; }
 .app-shell.theme-white .welcome-row h1,
 .app-shell.theme-white .welcome-row .subtle,
-.app-shell.theme-white .welcome-row .eyebrow { color: #fff8f0 !important; }
-.app-shell.theme-white .app-footer { color: #f0d8c8 !important; }
-.app-shell.theme-white .footer-link { color: #ffd0b4 !important; }
+.app-shell.theme-white .welcome-row .eyebrow { color: #292b28 !important; }
+.app-shell.theme-white .app-footer { color: #5f6861 !important; }
+.app-shell.theme-white .footer-link { color: #b94d25 !important; }
 .app-shell.theme-white .topbar .theme-toggle,
 .app-shell.theme-white .topbar .icon-button,
 .app-shell.theme-white .topbar .header-user { background: #ffffff !important; color: #667069 !important; }
@@ -319,9 +415,77 @@ button:disabled { cursor: not-allowed; opacity: .6; }
 .app-shell.theme-white .primary-button,
 .app-shell.theme-white .sidebar nav button.active { background: #fae9df !important; color: #b94d25 !important; }
 .app-shell.theme-white .primary-button { background: #d76437 !important; color: #ffffff !important; }
-.theme-toggle { display: none !important; }
 textarea { max-width: 100%; }
 .long-value { overflow-wrap: anywhere; }
+
+/* Ensure the Add Product form and side panel stay readable in the white theme. */
+.app-shell.theme-white .panel,
+.app-shell.theme-white .panel * {
+  color: #1f2724 !important;
+}
+.app-shell.theme-white .panel p,
+.app-shell.theme-white .panel small,
+.app-shell.theme-white .panel .subtle,
+.app-shell.theme-white .panel .muted,
+.app-shell.theme-white .panel-heading p,
+.app-shell.theme-white .metric-card p,
+.app-shell.theme-white .quick-action small,
+.app-shell.theme-white .quick-actions button small,
+.app-shell.theme-white .quick-action-grid button small,
+.app-shell.theme-white .metric-card small,
+.app-shell.theme-white .verification-banner p,
+.app-shell.theme-white .table-scroll td,
+.app-shell.theme-white .form-section label small,
+.app-shell.theme-white .form-grid label small,
+.app-shell.theme-white .product-form .subtle,
+.app-shell.theme-white .product-form .upload-box .subtle,
+.app-shell.theme-white .product-form .upload-box span,
+.app-shell.theme-white .product-form .empty-state,
+.app-shell.theme-white .editor-steps button small,
+.app-shell.theme-white .editor-steps button:not(.active) {
+  color: #5f6861 !important;
+}
+.app-shell.theme-white .panel h2,
+.app-shell.theme-white .panel-heading p,
+.app-shell.theme-white .metric-card strong,
+.app-shell.theme-white .metric-card p,
+.app-shell.theme-white .quick-action span,
+.app-shell.theme-white .quick-actions button span,
+.app-shell.theme-white .quick-action-grid button span,
+.app-shell.theme-white .verification-banner b,
+.app-shell.theme-white .product-cell b,
+.app-shell.theme-white .table-scroll td > b,
+.app-shell.theme-white .form-section h2,
+.app-shell.theme-white .form-section label,
+.app-shell.theme-white .form-grid label,
+.app-shell.theme-white .field label,
+.app-shell.theme-white .field > span,
+.app-shell.theme-white .field input,
+.app-shell.theme-white .field textarea,
+.app-shell.theme-white .field select,
+.app-shell.theme-white .product-form label,
+.app-shell.theme-white .product-form input,
+.app-shell.theme-white .product-form textarea,
+.app-shell.theme-white .product-form select,
+.app-shell.theme-white .product-form .upload-box,
+.app-shell.theme-white .product-form .upload-box b,
+.app-shell.theme-white .product-form .upload-box span,
+.app-shell.theme-white .product-form .auth-notice,
+.app-shell.theme-white .product-form .badge,
+.app-shell.theme-white .editor-steps button,
+.app-shell.theme-white .editor-steps button span {
+  color: #1f2724 !important;
+}
+.app-shell.theme-white .editor-steps button.active,
+.app-shell.theme-white .editor-steps button.active span {
+  color: #b94d25 !important;
+}
+.app-shell.theme-white .product-form input::placeholder,
+.app-shell.theme-white .product-form textarea::placeholder,
+.app-shell.theme-white .product-form select::placeholder {
+  color: #6f776f !important;
+  opacity: 1;
+}
 
 .theme-toggle { display: inline-flex; align-items: center; gap: 2px; min-height: 34px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); padding: 3px; color: var(--muted); font-size: 10px; font-weight: 700; }
 .theme-toggle span { border-radius: 999px; padding: 6px 8px; }.theme-toggle span.active { background: var(--orange-soft); color: var(--orange-dark); }

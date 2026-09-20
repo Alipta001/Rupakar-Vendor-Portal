@@ -19,6 +19,8 @@ function Strength({ password }: { password: string }) {
   return <div className="password-strength" aria-live="polite"><div className="strength-bars">{[1, 2, 3, 4].map(i => <i key={i} className={i <= score ? 'filled' : ''} />)}</div><span>{password ? labels[score] : 'Use 8+ characters with numbers and symbols'}</span></div>
 }
 
+const EMAIL_SESSION_KEY = 'rupakar_seller_auth_email'
+
 export default function AuthRoute() {
   const pathname = usePathname()
   const router = useRouter()
@@ -31,6 +33,15 @@ export default function AuthRoute() {
   const [done, setDone] = useState(false)
   const [seconds, setSeconds] = useState(0)
   const [touched, setTouched] = useState(false)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const savedEmail = window.sessionStorage.getItem(EMAIL_SESSION_KEY)
+    if (!savedEmail) return
+    if (mode === 'verify' || mode === 'forgot' || mode === 'reset') {
+      setForm(current => ({ ...current, email: current.email || savedEmail, emailOrMobile: current.emailOrMobile || savedEmail }))
+    }
+  }, [mode])
 
   useEffect(() => { if (!seconds) return; const timer = window.setInterval(() => setSeconds(s => Math.max(0, s - 1)), 1000); return () => window.clearInterval(timer) }, [seconds])
   const update = (key: keyof typeof form) => (value: string) => setForm(current => ({ ...current, [key]: value }))
@@ -47,9 +58,16 @@ export default function AuthRoute() {
     setLoading(false)
     if (result.error) { setNotice({ type: 'error', text: result.error }); return }
     if (mode === 'login') { setDone(true); window.setTimeout(() => router.push('/'), 700) }
-    else if (mode === 'register') { setNotice({ type: 'success', text: 'Account created. Verify your contact to continue.' }); window.setTimeout(() => router.push('/verify'), 900) }
+    else if (mode === 'register') {
+      window.sessionStorage.setItem(EMAIL_SESSION_KEY, form.email)
+      setNotice({ type: 'success', text: 'Account created. Verify your contact to continue.' });
+      window.setTimeout(() => router.push('/verify'), 900)
+    }
     else if (mode === 'verify') { setDone(true); window.setTimeout(() => router.push('/'), 700) }
-    else if (mode === 'forgot') { setDone(true); setSeconds(300) }
+    else if (mode === 'forgot') {
+      window.sessionStorage.setItem(EMAIL_SESSION_KEY, form.emailOrMobile)
+      setDone(true); setSeconds(300)
+    }
     else { setDone(true); window.setTimeout(() => router.push('/login'), 1200) }
   }
   const resend = async () => { if (seconds) return; setLoading(true); const result = await authService.resendOTP(form.email || form.emailOrMobile); setLoading(false); if (result.error) setNotice({ type: 'error', text: result.error }); else { setSeconds(result.data.expiresIn); setNotice({ type: 'success', text: 'A new verification code has been sent.' }) } }

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head><title>Auth Helper</title></head>
+<body>
+<h1>Logging in...</h1>
+<script>
+(async () => {
+  try {
+    const res = await fetch('http://localhost:4000/api/v1/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'vendor@rupakar.com', password: 'Password123!' })
+    });
+    const data = await res.json();
+    if (data.data?.accessToken) {
+      localStorage.setItem('rupakar_access_token', data.data.accessToken);
+      document.body.innerHTML = '<h1>Logged in! Redirecting...</h1>';
+      window.location.href = '/products/new';
+    } else {
+      document.body.innerHTML = '<h1>Login failed: ' + JSON.stringify(data) + '</h1>';
+    }
+  } catch (err) {
+    document.body.innerHTML = '<h1>Error: ' + err.message + '</h1>';
+  }
+})();
+</script>
+</body>
+</html>

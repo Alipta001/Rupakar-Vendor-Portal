@@ -1,0 +1,1 @@
+export type View = 'dashboard' | 'products' | 'product-new' | 'product-detail' | 'inventory' | 'orders' | 'order-detail' | 'finance' | 'reviews' | 'analytics' | 'store' | 'verification' | 'notifications' | 'support' | 'settings' | 'profile' | 'staff'

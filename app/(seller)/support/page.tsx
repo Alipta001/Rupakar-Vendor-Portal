@@ -1,4 +1,4 @@
 'use client'
 
-import { SellerModulePage } from '@/features/seller/components/SellerModulePage'
-export default function SupportRoute() { return <SellerModulePage view="support" setView={() => undefined} /> }
+import { SupportPage } from '@/features/support/components/SupportPage'
+export default SupportPage

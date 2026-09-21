@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, MessageSquareText, Package, Star } from 'luc
 import { PageHeader } from '@/components/layout/PageHeader'
 import { MetricCard } from '@/components/ui/MetricCard'
 import { StatusBadge } from '@/components/ui/StatusBadge'
-import { api } from '@/lib/api/client'
+import { api } from '@/api'
 
 type ReviewListItem = {
   id?: string

@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { Eye, EyeOff, ArrowLeft, CheckCircle2, ShieldCheck, Smartphone, Mail, LockKeyhole } from 'lucide-react'
 import { authService } from '@/features/auth/services/auth-service'
+import { useAuth } from '@/providers/auth-provider'
 
 type Mode = 'login' | 'register' | 'verify' | 'forgot' | 'reset'
 type Notice = { type: 'error' | 'success'; text: string } | null
@@ -24,6 +25,7 @@ const EMAIL_SESSION_KEY = 'rupakar_seller_auth_email'
 export default function AuthRoute() {
   const pathname = usePathname()
   const router = useRouter()
+  const { status, refresh } = useAuth()
   const mode: Mode = pathname.includes('register') ? 'register' : pathname.includes('forgot-password') ? 'forgot' : pathname.includes('reset-password') ? 'reset' : pathname.includes('verify') ? 'verify' : 'login'
   const [form, setForm] = useState({ emailOrMobile: '', password: '', confirmPassword: '', storeName: '', ownerName: '', email: '', mobile: '', otp: '' })
   const [rememberMe, setRememberMe] = useState(false)
@@ -43,6 +45,10 @@ export default function AuthRoute() {
     }
   }, [mode])
 
+  useEffect(() => {
+    if (mode === 'login' && status === 'authenticated') router.replace('/dashboard')
+  }, [mode, router, status])
+
   useEffect(() => { if (!seconds) return; const timer = window.setInterval(() => setSeconds(s => Math.max(0, s - 1)), 1000); return () => window.clearInterval(timer) }, [seconds])
   const update = (key: keyof typeof form) => (value: string) => setForm(current => ({ ...current, [key]: value }))
   const passwordError = touched && form.password.length > 0 && form.password.length < 8 ? 'Use at least 8 characters.' : undefined
@@ -57,13 +63,13 @@ export default function AuthRoute() {
     const result = mode === 'login' ? await authService.login({ emailOrMobile: form.emailOrMobile, password: form.password, rememberMe }) : mode === 'register' ? await authService.register({ storeName: form.storeName, ownerName: form.ownerName, email: form.email, mobile: form.mobile, password: form.password, confirmPassword: form.confirmPassword, termsAccepted: terms }) : mode === 'verify' ? await authService.verifyOTP({ otp: form.otp, email: form.email || form.emailOrMobile }) : mode === 'forgot' ? await authService.forgotPassword({ emailOrMobile: form.emailOrMobile }) : await authService.resetPassword({ newPassword: form.password, confirmPassword: form.confirmPassword, email: form.email || form.emailOrMobile, otp: form.otp })
     setLoading(false)
     if (result.error) { setNotice({ type: 'error', text: result.error }); return }
-    if (mode === 'login') { setDone(true); window.setTimeout(() => router.push('/'), 700) }
+    if (mode === 'login') { await refresh(); setDone(true); router.replace('/dashboard') }
     else if (mode === 'register') {
       window.sessionStorage.setItem(EMAIL_SESSION_KEY, form.email)
       setNotice({ type: 'success', text: 'Account created. Verify your contact to continue.' });
       window.setTimeout(() => router.push('/verify'), 900)
     }
-    else if (mode === 'verify') { setDone(true); window.setTimeout(() => router.push('/'), 700) }
+    else if (mode === 'verify') { await refresh(); setDone(true); router.replace('/dashboard') }
     else if (mode === 'forgot') {
       window.sessionStorage.setItem(EMAIL_SESSION_KEY, form.emailOrMobile)
       setDone(true); setSeconds(300)

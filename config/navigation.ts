@@ -5,9 +5,9 @@ export type NavigationItem = { label: string; icon: LucideIcon; href: SellerRout
 
 export const workspaceNavigation: NavigationItem[] = [
   { label: 'Overview', icon: LayoutDashboard, href: '/dashboard' },
-  { label: 'Products', icon: Package, href: '/products', count: '24' },
-  { label: 'Inventory', icon: Box, href: '/inventory', count: '3' },
-  { label: 'Orders', icon: ShoppingBag, href: '/orders', count: '8' },
+  { label: 'Products', icon: Package, href: '/products' },
+  { label: 'Inventory', icon: Box, href: '/inventory' },
+  { label: 'Orders', icon: ShoppingBag, href: '/orders' },
   { label: 'Finance', icon: Wallet, href: '/finance' },
   { label: 'Reviews', icon: FileText, href: '/reviews' },
   { label: 'Analytics', icon: BarChart3, href: '/analytics' },

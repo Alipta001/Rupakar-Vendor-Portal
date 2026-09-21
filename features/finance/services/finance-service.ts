@@ -1,4 +1,4 @@
-import { api } from '@/lib/api/client'
+import { api } from '@/api'
 
 export type LedgerEntry = { _id: string; parentOrderId: string; vendorOrderId: string; vendorId: string; paymentId: string; transactionType: string; status: string; grossAmount: number; commissionRate: number; commissionAmount: number; commissionSource: string; paymentFee: number; adjustmentAmount: number; netAmount: number; currency: string; createdAt?: string }
 export type LedgerPage = { items: LedgerEntry[]; page: number; limit: number; total: number }

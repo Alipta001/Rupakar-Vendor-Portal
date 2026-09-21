@@ -1,4 +1,4 @@
-import { api } from '@/lib/api/client'
+import { api } from '@/api'
 import type { SellerProfileData, UserProfile, VendorProfile } from '@/features/profile/types/profile.types'
 
 export const profileService = {

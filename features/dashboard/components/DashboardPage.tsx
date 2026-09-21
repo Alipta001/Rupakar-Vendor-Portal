@@ -1,38 +1,21 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Activity, ArrowUpRight, Box, ChevronRight, IndianRupee, Plus, ReceiptIndianRupee, ShieldCheck, ShoppingBag, Truck, Wallet } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { MetricCard } from '@/components/ui/MetricCard'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { dashboardService, type DashboardData } from '@/features/dashboard/services/dashboard-data'
 import type { View } from '@/features/seller/types/view.types'
 import { useAuth } from '@/providers/auth-provider'
+import { useDashboardQuery } from '@/features/dashboard/hooks/use-dashboard-query'
 
 const money = (value: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value || 0)
 
 export function DashboardPage({ setView }: { setView?: (view: View) => void }) {
   const router = useRouter()
   const { user, vendor } = useAuth()
-  const [data, setData] = useState<DashboardData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-
-  useEffect(() => {
-    let active = true
-    setLoading(true)
-    setError('')
-    dashboardService.get().then((response) => {
-      if (!active) return
-      setData(response)
-    }).catch((cause) => {
-      if (!active) return
-      setError(cause instanceof Error ? cause.message : 'Unable to load dashboard data')
-    }).finally(() => {
-      if (active) setLoading(false)
-    })
-    return () => { active = false }
-  }, [])
+  const { data = null, isLoading: loading, error: queryError } = useDashboardQuery()
+  const error = queryError instanceof Error ? queryError.message : queryError ? 'Unable to load dashboard data' : ''
 
   const businessName = vendor?.businessName || data?.vendor.businessName || 'Your store'
   const customerName = user?.fullName || user?.name || 'Seller'

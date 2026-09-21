@@ -26,6 +26,7 @@ import {
   type ProductInput,
   type SellerProduct,
 } from '@/features/products/services/product-service'
+import { ApiError, getApiErrorMessage } from '@/lib/api/errors'
 import type { View } from '@/features/seller/types/view.types'
 
 type FormState = {
@@ -125,8 +126,23 @@ const toForm = (product: SellerProduct): FormState => {
 }
 
 const getFriendlyError = (cause: unknown) => {
+  if (cause instanceof ApiError) {
+    if (process.env.NODE_ENV !== 'production') {
+      const status = cause.status || 'network'
+      const code = cause.code ? ` ${cause.code}` : ''
+      return `Image upload failed (${status}${code}): ${cause.message}`
+    }
+
+    if (cause.status >= 500) {
+      return 'Image storage is temporarily unavailable. Please try again later.'
+    }
+
+    return getApiErrorMessage(cause, 'Unable to update product images. Please try again.')
+  }
+
   if (cause instanceof Error) {
     const message = cause.message || 'Request failed'
+    if (process.env.NODE_ENV !== 'production') return `Image upload failed: ${message}`
     if (message.includes('Only JPG') || message.includes('image')) {
       return 'Only JPG, PNG, WEBP, GIF, and BMP images up to 2 MB are allowed.'
     }
@@ -204,7 +220,7 @@ export function ProductForm({ setView }: { setView: (view: View) => void }) {
         setProductImages(normalizeImages(result.images))
         setAdditionalVariants(
           result.variants.slice(1).map((variant) => ({
-            sku: variant.sku,
+            sku: variant.sku || '',
             price: String(variant.price),
             compareAtPrice:
               variant.compareAtPrice == null ? '' : String(variant.compareAtPrice),
@@ -246,15 +262,15 @@ export function ProductForm({ setView }: { setView: (view: View) => void }) {
       .filter(Boolean),
     variants: [
       {
-        sku: form.sku.trim(),
+        ...(form.sku.trim() ? { sku: form.sku.trim() } : {}),
         price: Number(form.price),
         compareAtPrice: form.compareAtPrice ? Number(form.compareAtPrice) : null,
         status: 'ACTIVE' as const,
       },
       ...additionalVariants
-        .filter((variant) => variant.sku.trim() && Number(variant.price))
+        .filter((variant) => Number(variant.price))
         .map((variant) => ({
-          sku: variant.sku.trim(),
+          ...(variant.sku.trim() ? { sku: variant.sku.trim() } : {}),
           price: Number(variant.price),
           compareAtPrice: variant.compareAtPrice ? Number(variant.compareAtPrice) : null,
           status: 'ACTIVE' as const,
@@ -267,14 +283,13 @@ export function ProductForm({ setView }: { setView: (view: View) => void }) {
     },
     tax: { taxable: true, gstIncluded: form.gstIncluded },
   })
-
   const save = async (submit = false) => {
     setError('')
     setNotice('')
     setImageError('')
 
-    if (!form.name.trim() || !form.sku.trim() || !Number(form.price)) {
-      setError('Product name, SKU, and a selling price greater than ₹0 are required.')
+    if (!form.name.trim() || !Number(form.price)) {
+      setError('Product name and a selling price greater than ₹0 are required.')
       setStep(0)
       return
     }
@@ -285,12 +300,15 @@ export function ProductForm({ setView }: { setView: (view: View) => void }) {
         ? await productService.update(productId, payload())
         : await productService.create(payload())
 
-      if (Number(form.stock) > 0 && saved.variants?.[0]) {
+      const savedVariantId = saved.variantId || saved.variants?.[0]?._id || saved.variants?.[0]?.id
+      if (Number(form.stock) > 0 && savedVariantId) {
         await productService.adjustInventory(
-          saved.variants[0]._id || saved.variants[0].id || '',
+          savedVariantId,
           Number(form.stock),
           'INITIAL_STOCK',
         )
+      } else if (Number(form.stock) > 0) {
+        throw new Error('The product was created, but its variant ID was not returned. Inventory was not updated.')
       }
 
       if (submit) {
@@ -298,6 +316,7 @@ export function ProductForm({ setView }: { setView: (view: View) => void }) {
       }
 
       setProduct(saved)
+      setForm(toForm(saved))
       setNotice(
         submit
           ? 'Product submitted for marketplace review.'
@@ -308,7 +327,7 @@ export function ProductForm({ setView }: { setView: (view: View) => void }) {
         router.replace(`/products/${saved.id}/edit`)
       }
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to save product')
+      setError(getApiErrorMessage(cause, 'Unable to save product'))
     } finally {
       setSaving(false)
     }
@@ -337,7 +356,7 @@ export function ProductForm({ setView }: { setView: (view: View) => void }) {
     try {
       for (const [index, file] of selectedFiles.entries()) {
         const primaryImage =
-          sortedImages.length === 0 && !sortedImages.some((image) => image.isPrimary)
+          sortedImages.length === 0 && index === 0 && !sortedImages.some((image) => image.isPrimary)
         await productService.uploadImage(productId, file, {
           altText: file.name.replace(/\.[^/.]+$/, ''),
           sortOrder: sortedImages.length + index,
@@ -857,14 +876,14 @@ export function ProductForm({ setView }: { setView: (view: View) => void }) {
                 <div className="form-grid">
                   <div className="form-field">
                     <label>
-                      <span>SKU Code<em>*</em></span>
+                      <span>SKU Code (Auto-generated)</span>
                       <input
                         value={form.sku}
                         onChange={(event) => update('sku', event.target.value)}
                         placeholder="e.g. RUP-TER-024"
                       />
                     </label>
-                    <span className="field-hint">Unique alphanumeric stock identifier</span>
+                    <span className="field-hint">Leave blank to generate a unique SKU automatically. You can edit it before saving.</span>
                   </div>
 
                   <div className="form-field">
@@ -1260,7 +1279,7 @@ export function ProductForm({ setView }: { setView: (view: View) => void }) {
                       color: form.sku.trim() ? '#166534' : '#991b1b',
                     }}
                   >
-                    {form.sku.trim() ? '✓ SKU configured' : '✗ SKU required'}
+                    {form.sku.trim() ? '✓ SKU configured' : '✓ SKU will be generated automatically'}
                   </div>
 
                   <div

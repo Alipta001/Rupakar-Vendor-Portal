@@ -1,4 +1,4 @@
-import { api } from '@/lib/api/client'
+import { api } from '@/api'
 
 export type VendorOrderStatus = 'PENDING_PAYMENT' | 'PAID' | 'CONFIRMED' | 'PROCESSING' | 'READY_TO_SHIP' | 'PACKED' | 'SHIPPED' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED' | 'FAILED' | 'REFUND_PENDING' | 'REFUNDED' | 'PARTIALLY_REFUNDED'
 export type VendorOrderItem = { productId: string; variantId: string; productName: string; sku: string; quantity: number; unitPrice: number; lineTotal: number; productSnapshot?: Record<string, string> }

@@ -1,4 +1,4 @@
-import { api } from '@/lib/api/client'
+import { api } from '@/api'
 
 export type VerificationDocument = { id: string; documentType: string; status: 'PENDING' | 'APPROVED' | 'REJECTED'; submittedAt?: string; verifiedAt?: string | null; rejectionReason?: string | null }
 export type VerificationState = {

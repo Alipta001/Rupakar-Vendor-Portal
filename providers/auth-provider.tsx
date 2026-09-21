@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { api, setAccessToken } from '@/lib/api/client'
+import { api, setAccessToken } from '@/api'
 import { AUTH_EXPIRED_EVENT } from '@/lib/auth/auth-session'
 import { profileService } from '@/features/profile/services/profile-service'
 import type { UserProfile, VendorProfile } from '@/features/profile/types/profile.types'

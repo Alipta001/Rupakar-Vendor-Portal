@@ -1,11 +1,11 @@
-import { api } from '@/lib/api/client'
+import { api, endpoints } from '@/api'
 
 export type ProductStatus = 'DRAFT' | 'SUBMITTED' | 'UNDER_REVIEW' | 'APPROVED' | 'REJECTED' | 'PUBLISHED' | 'UNPUBLISHED' | 'ARCHIVED'
 
 export type ProductVariant = {
   _id?: string
   id?: string
-  sku: string
+  sku?: string
   barcode?: string
   price: number
   compareAtPrice?: number | null
@@ -38,6 +38,7 @@ export type SellerProduct = {
   vendorId: string
   name: string
   slug: string
+  variantId?: string
   shortDescription?: string
   description?: string
   categoryId?: { _id?: string; id?: string; name?: string } | string | null
@@ -91,12 +92,15 @@ export const productService = {
     if (metadata.altText !== undefined) formData.append('altText', metadata.altText)
     if (metadata.sortOrder !== undefined) formData.append('sortOrder', String(metadata.sortOrder))
     if (metadata.isPrimary !== undefined) formData.append('isPrimary', String(metadata.isPrimary))
-    return api.postMultipart<ProductImage>(`/vendor/products/${productId}/images`, formData)
+    return api.post<ProductImage>(`/vendor/products/${productId}/images`, formData)
   },
   deleteImage: (productId: string, imageId: string) => api.delete<{ deleted: boolean; imageId: string }>(`/vendor/products/${productId}/images/${imageId}`),
   updateImage: (productId: string, imageId: string, payload: { altText?: string; sortOrder?: number; isPrimary?: boolean }) => api.patch<ProductImage>(`/vendor/products/${productId}/images/${imageId}`, payload),
   inventory: (params: { page?: number; limit?: number } = {}) => api.get<InventoryPage>(`/vendor/inventory${query(params)}`),
-  adjustInventory: (variantId: string, delta: number, reason = 'SELLER_ADJUSTMENT') => api.patch<InventoryItem>(`/vendor/inventory/${variantId}`, { delta, reason }),
+  adjustInventory: (variantId: string, delta: number, reason = 'SELLER_ADJUSTMENT') => {
+    if (!variantId.trim()) throw new Error('A product variant ID is required before inventory can be updated.')
+    return api.patch<InventoryItem>(`${endpoints.inventory}/${encodeURIComponent(variantId)}`, { delta, reason })
+  },
   categories: () => api.get<LookupPage<LookupItem>>('/categories?limit=100'),
   brands: () => api.get<LookupPage<LookupItem>>('/brands?limit=100'),
 }

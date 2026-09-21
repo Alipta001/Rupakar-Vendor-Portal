@@ -1,4 +1,4 @@
-import { api, setAccessToken } from '@/lib/api/client'
+import { api, endpoints, setAccessToken } from '@/api'
 import type { SellerProfile, ServiceResult } from '@/features/seller/types/seller.types'
 import type { UserProfile, VendorProfile } from '@/features/profile/types/profile.types'
 
@@ -31,9 +31,9 @@ const unwrapError = (error: unknown) => error instanceof Error ? error.message :
 export const authService = {
   async login(request: LoginRequest): Promise<ServiceResult<LoginResponse>> {
     try {
-      const result = await api.post<BackendAuth>('/auth/login', { email: request.emailOrMobile, password: request.password })
+      const result = await api.post<BackendAuth>(endpoints.auth.login, { email: request.emailOrMobile, password: request.password })
       setAccessToken(result.accessToken)
-      const vendor = await api.get<VendorProfile>('/vendors/me')
+      const vendor = await api.get<VendorProfile>(endpoints.vendors.me)
       if (vendor.status === 'SUSPENDED' || vendor.status === 'BLOCKED') {
         setAccessToken(null)
         return { data: {} as LoginResponse, error: 'Your seller account is suspended.' }
@@ -46,7 +46,7 @@ export const authService = {
     try {
       if (request.password !== request.confirmPassword) return { data: { sellerId: '', nextStep: '' }, error: 'Passwords do not match' }
       if (!request.termsAccepted) return { data: { sellerId: '', nextStep: '' }, error: 'You must accept the seller terms' }
-      const result = await api.post<BackendAuth>('/auth/register-seller', {
+      const result = await api.post<BackendAuth>(endpoints.auth.registerSeller, {
         name: request.ownerName,
         email: request.email,
         password: request.password,
@@ -65,9 +65,9 @@ export const authService = {
 
   async verifyOTP(request: VerifyRequest): Promise<ServiceResult<{ seller: SellerProfile }>> {
     try {
-      const result = await api.post<BackendAuth>('/auth/verify-otp', request)
+      const result = await api.post<BackendAuth>(endpoints.auth.verifyOtp, request)
       setAccessToken(result.accessToken)
-      const vendor = await api.get<VendorProfile>('/vendors/me')
+      const vendor = await api.get<VendorProfile>(endpoints.vendors.me)
       return { data: { seller: mapSeller(result.user, vendor) } }
     } catch (error) { return { data: { seller: emptySeller() }, error: unwrapError(error) } }
   },

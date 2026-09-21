@@ -1,4 +1,4 @@
-import { api } from '@/lib/api/client'
+import { api } from '@/api'
 
 export type InventoryProduct = { _id: string; name: string; slug: string }
 export type InventoryVariant = { _id: string; sku: string; price: number; attributes?: Record<string, string> }

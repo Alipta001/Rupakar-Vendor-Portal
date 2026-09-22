@@ -26,7 +26,9 @@ export function SellerShell({ children }: { children: ReactNode }) {
         <div className="app-shell theme-white">
           <aside className={`sidebar ${open ? 'open' : ''}`}>
             <div className="brand">
-              <div className="brand-mark">R</div>
+              <div className="brand-mark" style={{ overflow: 'hidden', padding: 0 }}>
+                <img src="/Rupakar-logo.jpeg" alt="Rupakar logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="eager" />
+              </div>
               <div>
                 <b>RUPAKAR</b>
                 <span>SELLER STUDIO</span>

@@ -6,6 +6,7 @@ export type VendorOrderParent = { _id: string; paymentStatus: string; status: st
 export type VendorOrder = { _id: string; parentOrderId: string; vendorId: string; customerId: string; status: VendorOrderStatus; items: VendorOrderItem[]; subtotal: number; discount: number; tax: number; shipping: number; total: number; currency: string; parent?: VendorOrderParent | null; createdAt?: string; updatedAt?: string }
 export type VendorOrderPage = { items: VendorOrder[]; page: number; limit: number; total: number }
 export type VendorOrderActionResult = { vendorOrder: VendorOrder; order?: Record<string, unknown>; shipment?: Record<string, unknown> }
+export type DocumentDownload = { documentNumber?: string; invoiceNumber?: string; downloadUrl: string }
 
 const query = (params: Record<string, string | number | undefined>) => {
   const search = new URLSearchParams()
@@ -19,4 +20,6 @@ export const orderService = {
   get: (id: string) => api.get<VendorOrder>('/vendors/orders/' + id),
   pack: (id: string) => api.post<VendorOrderActionResult>('/vendors/orders/' + id + '/pack', {}),
   ship: (id: string) => api.post<VendorOrderActionResult>('/vendors/orders/' + id + '/ship', {}),
+  invoice: (id: string) => api.get<DocumentDownload>('/vendors/orders/' + id + '/invoice'),
+  packingSlip: (id: string) => api.get<DocumentDownload>('/vendors/orders/' + id + '/packing-slip'),
 }

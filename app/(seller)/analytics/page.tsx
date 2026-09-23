@@ -1,4 +1,6 @@
-'use client'
+import { AnalyticsPage } from '@/features/analytics/components/AnalyticsPage'
 
-import { SellerModulePage } from '@/features/seller/components/SellerModulePage'
-export default function AnalyticsRoute() { return <SellerModulePage view="analytics" setView={() => undefined} /> }
+export default function AnalyticsRoute() {
+  return <AnalyticsPage />
+}
+

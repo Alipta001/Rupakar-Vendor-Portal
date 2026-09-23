@@ -12,8 +12,34 @@ import type { View } from '@/features/seller/types/view.types'
 const statuses: Array<{ label: string; value?: ProductStatus }> = [{ label: 'All products' }, { label: 'Published', value: 'PUBLISHED' }, { label: 'Under review', value: 'UNDER_REVIEW' }, { label: 'Drafts', value: 'DRAFT' }, { label: 'Rejected', value: 'REJECTED' }]
 
 const productPrice = (product: SellerProduct) => product.variants?.[0]?.price ?? 0
+const productStock = (product: SellerProduct, inventory: InventoryItem[]) => {
+  if (product.variants && product.variants.length > 0) {
+    return product.variants.reduce((sum, variant) => {
+      const vId = String(variant._id || variant.id || '')
+      const match = inventory.find((item) => {
+        const itemVId = typeof item.variantId === 'object' && item.variantId !== null
+          ? String(item.variantId._id || item.variantId.id || '')
+          : String(item.variantId || '')
+        return itemVId === vId
+      })
+      const available = match
+        ? match.availableQuantity
+        : typeof variant.availableStock === 'number'
+        ? variant.availableStock
+        : typeof variant.stock === 'number'
+        ? variant.stock
+        : 0
+      return sum + available
+    }, 0)
+  }
+  return typeof product.availableStock === 'number'
+    ? product.availableStock
+    : typeof product.stock === 'number'
+    ? product.stock
+    : 0
+}
+
 const productSku = (product: SellerProduct) => product.variants?.[0]?.sku ?? 'No SKU'
-const productStock = (product: SellerProduct, inventory: InventoryItem[]) => product.variants?.reduce((sum, variant) => sum + (inventory.find((item) => item.variantId === (variant._id || variant.id))?.availableQuantity ?? 0), 0) || 0
 
 export function ProductsPage({ setView }: { setView: (view: View) => void }) {
   const router = useRouter()

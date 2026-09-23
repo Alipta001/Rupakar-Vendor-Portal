@@ -30,15 +30,34 @@ export function OrderDetailsPage({ setView: _setView }: { setView: (view: 'order
 
   useEffect(() => { load() }, [orderId])
 
+  const address = useMemo(() => order?.parent?.shippingAddressSnapshot || {}, [order])
+
+  const validAction = useMemo(() => {
+    if (!order) return null
+    if (['PAID', 'CONFIRMED'].includes(order.status)) {
+      return { label: 'Start processing', action: 'process' as const }
+    }
+    if (order.status === 'PROCESSING') {
+      return { label: 'Pack', action: 'pack' as const }
+    }
+    if (order.status === 'PACKED') {
+      return { label: 'Ready to Ship', action: 'readyToShip' as const }
+    }
+    if (order.status === 'READY_TO_SHIP') {
+      return { label: 'Ship', action: 'ship' as const }
+    }
+    return null
+  }, [order])
+
   const advance = async () => {
-    if (!order) return
+    if (!order || !validAction || saving) return
     setSaving(true)
     setError('')
     try {
-      if (order.status === 'READY_TO_SHIP') await orderService.ship(order._id)
-      else if (order.status === 'PACKED') await orderService.readyToShip(order._id)
-      else if (['PAID', 'CONFIRMED'].includes(order.status)) await orderService.process(order._id)
-      else await orderService.pack(order._id)
+      if (validAction.action === 'process') await orderService.process(order._id)
+      else if (validAction.action === 'pack') await orderService.pack(order._id)
+      else if (validAction.action === 'readyToShip') await orderService.readyToShip(order._id)
+      else if (validAction.action === 'ship') await orderService.ship(order._id)
       load()
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to update order')
@@ -60,9 +79,6 @@ export function OrderDetailsPage({ setView: _setView }: { setView: (view: 'order
       setDocumentLoading('')
     }
   }
-
-  const address = useMemo(() => order?.parent?.shippingAddressSnapshot || {}, [order])
-  const canAdvance = ['PAID', 'CONFIRMED', 'PROCESSING', 'PACKED', 'READY_TO_SHIP'].includes(order?.status ?? '') && order?.parent?.paymentStatus === 'PAID'
 
   if (loading) return <main className="workspace"><p className="subtle">Loading order…</p></main>
   if (!order) return <main className="workspace"><div className="auth-notice error" role="alert">{error || 'Order unavailable.'}</div></main>
@@ -127,9 +143,9 @@ export function OrderDetailsPage({ setView: _setView }: { setView: (view: 'order
               <Printer /> {documentLoading === 'packingSlip' ? 'Preparing…' : 'Download packing slip'}
             </button>
           )}
-          {canAdvance && (
+          {validAction && (
             <button className="primary-button" disabled={saving} onClick={advance}>
-              <Send /> {saving ? 'Saving…' : order.status === 'PACKED' ? 'Mark ready to ship' : order.status === 'READY_TO_SHIP' ? 'Hand to carrier' : ['PAID', 'CONFIRMED'].includes(order.status) ? 'Start processing' : 'Mark packed'}
+              <Send /> {saving ? 'Saving…' : validAction.label}
             </button>
           )}
         </div>

@@ -14,6 +14,10 @@ export type ProductVariant = {
   dimensions?: { length?: number; width?: number; height?: number }
   attributes?: Record<string, string>
   status?: 'ACTIVE' | 'INACTIVE'
+  stock?: number
+  availableStock?: number
+  reservedStock?: number
+  soldStock?: number
 }
 
 export type ProductImage = {
@@ -49,6 +53,10 @@ export type SellerProduct = {
   images: ProductImage[] | string[]
   status: ProductStatus
   rejectionReason?: string
+  stock?: number
+  availableStock?: number
+  reservedStock?: number
+  soldStock?: number
   createdAt?: string
   updatedAt?: string
 }
@@ -68,7 +76,16 @@ export type ProductInput = {
 }
 
 export type ProductPage = { data: SellerProduct[]; page: number; limit: number; total: number }
-export type InventoryItem = { _id: string; productId: string; variantId: string; availableQuantity: number; reservedQuantity: number; soldQuantity: number; lowStockThreshold: number; status: string }
+export type InventoryItem = {
+  _id: string
+  productId: string | { _id?: string; id?: string; name?: string; slug?: string }
+  variantId: string | { _id?: string; id?: string; sku?: string; price?: number; attributes?: Record<string, string> }
+  availableQuantity: number
+  reservedQuantity: number
+  soldQuantity: number
+  lowStockThreshold: number
+  status: string
+}
 export type InventoryPage = { items: InventoryItem[]; page: number; limit: number; total: number }
 export type LookupPage<T> = { items: T[]; page: number; limit: number; total: number }
 export type LookupItem = { _id: string; id?: string; name: string; slug: string }

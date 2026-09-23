@@ -35,7 +35,9 @@ export function OrderDetailsPage({ setView: _setView }: { setView: (view: 'order
     setSaving(true)
     setError('')
     try {
-      if (order.status === 'PACKED') await orderService.ship(order._id)
+      if (order.status === 'READY_TO_SHIP') await orderService.ship(order._id)
+      else if (order.status === 'PACKED') await orderService.readyToShip(order._id)
+      else if (['PAID', 'CONFIRMED'].includes(order.status)) await orderService.process(order._id)
       else await orderService.pack(order._id)
       load()
     } catch (cause) {
@@ -60,7 +62,7 @@ export function OrderDetailsPage({ setView: _setView }: { setView: (view: 'order
   }
 
   const address = useMemo(() => order?.parent?.shippingAddressSnapshot || {}, [order])
-  const canAdvance = (['PAID', 'CONFIRMED', 'PROCESSING', 'READY_TO_SHIP'].includes(order?.status ?? '') && order?.parent?.paymentStatus === 'PAID') || order?.status === 'PACKED'
+  const canAdvance = ['PAID', 'CONFIRMED', 'PROCESSING', 'PACKED', 'READY_TO_SHIP'].includes(order?.status ?? '') && order?.parent?.paymentStatus === 'PAID'
 
   if (loading) return <main className="workspace"><p className="subtle">Loading order…</p></main>
   if (!order) return <main className="workspace"><div className="auth-notice error" role="alert">{error || 'Order unavailable.'}</div></main>
@@ -127,10 +129,17 @@ export function OrderDetailsPage({ setView: _setView }: { setView: (view: 'order
           )}
           {canAdvance && (
             <button className="primary-button" disabled={saving} onClick={advance}>
-              <Send /> {saving ? 'Saving…' : order.status === 'PACKED' ? 'Mark shipped' : 'Mark packed'}
+              <Send /> {saving ? 'Saving…' : order.status === 'PACKED' ? 'Mark ready to ship' : order.status === 'READY_TO_SHIP' ? 'Hand to carrier' : ['PAID', 'CONFIRMED'].includes(order.status) ? 'Start processing' : 'Mark packed'}
             </button>
           )}
         </div>
+        {order.shipment && (
+          <div className="mt-5 rounded-xl border border-[#E6D8C4] bg-[#FCF8F3] p-4 text-sm">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-[#7A655A]">Shipment tracking</p>
+            <p className="mt-2 font-semibold text-[#1E1A17]">AWB {order.shipment.trackingNumber || 'Pending'}</p>
+            {order.shipment.trackingUrl && <a className="mt-1 inline-block text-[#8B5E34] underline" href={order.shipment.trackingUrl} target="_blank" rel="noreferrer">Open tracking</a>}
+          </div>
+        )}
       </section>
 
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">

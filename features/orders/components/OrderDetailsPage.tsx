@@ -1,11 +1,11 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, Download, MapPin, Package, Printer, Send, ShieldCheck, Truck } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, Check, Download, MapPin, Package, Printer, Send, ShieldCheck, Truck, X } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { StatusBadge } from '@/components/ui/StatusBadge'
-import { orderService, type VendorOrder } from '@/features/orders/services/order-service'
+import { orderService, type CancellationRequest, type VendorOrder } from '@/features/orders/services/order-service'
 import { statusLabel, statusTone } from '@/features/seller/types/seller.types'
 
 const money = (value: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value)
@@ -19,6 +19,10 @@ export function OrderDetailsPage({ setView: _setView }: { setView: (view: 'order
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [documentLoading, setDocumentLoading] = useState('')
+  const [cancellations, setCancellations] = useState<CancellationRequest[]>([])
+  const [rejectingId, setRejectingId] = useState<string | null>(null)
+  const [rejectionReason, setRejectionReason] = useState('')
+  const [cancellationActionLoading, setCancellationActionLoading] = useState(false)
 
   const load = () => {
     setLoading(true)
@@ -26,6 +30,42 @@ export function OrderDetailsPage({ setView: _setView }: { setView: (view: 'order
       .then(setOrder)
       .catch((cause) => setError(cause instanceof Error ? cause.message : 'Unable to load order'))
       .finally(() => setLoading(false))
+
+    orderService.cancellationRequests({ limit: 50 })
+      .then((res) => {
+        const list = res?.items || []
+        setCancellations(list.filter((c) => String(c.vendorOrderId) === String(orderId) || String(c.orderId) === String(orderId)))
+      })
+      .catch(() => null)
+  }
+
+  const handleApproveCancellation = async (requestId: string) => {
+    setCancellationActionLoading(true)
+    setError('')
+    try {
+      await orderService.approveCancellation(requestId)
+      load()
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Unable to approve cancellation')
+    } finally {
+      setCancellationActionLoading(false)
+    }
+  }
+
+  const handleRejectCancellation = async (requestId: string) => {
+    if (!rejectionReason.trim()) return
+    setCancellationActionLoading(true)
+    setError('')
+    try {
+      await orderService.rejectCancellation(requestId, rejectionReason.trim())
+      setRejectingId(null)
+      setRejectionReason('')
+      load()
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Unable to reject cancellation')
+    } finally {
+      setCancellationActionLoading(false)
+    }
   }
 
   useEffect(() => { load() }, [orderId])
@@ -160,6 +200,105 @@ export function OrderDetailsPage({ setView: _setView }: { setView: (view: 'order
 
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <section className="panel detail-card">
+          {cancellations.length > 0 && (
+            <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50/40 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <AlertTriangle className="h-5 w-5 text-amber-600" />
+                <h4 className="text-sm font-semibold uppercase tracking-wider text-amber-900">Cancellation Requests</h4>
+              </div>
+              <div className="space-y-3">
+                {cancellations.map((req) => (
+                  <div key={req._id} className="rounded-lg border border-amber-200 bg-white p-3 shadow-sm text-sm">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-[#1E1A17]">{req.productName}</span>
+                          <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded ${
+                            req.status === 'PENDING' ? 'bg-amber-100 text-amber-800' :
+                            req.status === 'APPROVED' ? 'bg-red-100 text-red-800' :
+                            'bg-stone-100 text-stone-700'
+                          }`}>
+                            {req.status}
+                          </span>
+                        </div>
+                        <p className="text-xs text-[#5D4A3C] mt-1">
+                          Reason: <strong className="text-[#1E1A17]">{req.reason}</strong>
+                          {req.customerNote && <span> — &quot;{req.customerNote}&quot;</span>}
+                        </p>
+                        <p className="text-xs text-[#7A655A] mt-0.5">
+                          Requested Qty: {req.quantity} · Refund: {money(req.refundAmount)}
+                        </p>
+                        {req.rejectionReason && (
+                          <p className="text-xs text-red-700 mt-1">Rejection reason: {req.rejectionReason}</p>
+                        )}
+                      </div>
+
+                      {req.status === 'PENDING' && (
+                        <div className="flex items-center gap-2 pt-2 md:pt-0">
+                          {rejectingId === req._id ? (
+                            <div className="flex flex-col gap-1.5">
+                              <input
+                                type="text"
+                                placeholder="Rejection reason..."
+                                value={rejectionReason}
+                                onChange={(e) => setRejectionReason(e.target.value)}
+                                className="text-xs p-1.5 border border-[#D4C4B0] rounded"
+                              />
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  disabled={cancellationActionLoading || !rejectionReason.trim()}
+                                  onClick={() => handleRejectCancellation(req._id)}
+                                  className="px-2.5 py-1 text-xs bg-red-700 text-white rounded hover:bg-red-800 disabled:opacity-50"
+                                >
+                                  Confirm
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setRejectingId(null)
+                                    setRejectionReason('')
+                                  }}
+                                  className="px-2 py-1 text-xs border border-stone-300 rounded text-stone-600 hover:bg-stone-50"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                disabled={cancellationActionLoading}
+                                onClick={() => handleApproveCancellation(req._id)}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded bg-green-700 text-white hover:bg-green-800 disabled:opacity-50"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                                Approve & Refund
+                              </button>
+                              <button
+                                type="button"
+                                disabled={cancellationActionLoading}
+                                onClick={() => {
+                                  setRejectingId(req._id)
+                                  setRejectionReason('')
+                                }}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded border border-red-300 text-red-700 hover:bg-red-50 disabled:opacity-50"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                                Reject
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center gap-2 mb-5">
             <Package className="h-5 w-5 text-[#C89B3C]" />
             <h3 className="text-lg font-semibold text-[#1E1A17]">Order items</h3>

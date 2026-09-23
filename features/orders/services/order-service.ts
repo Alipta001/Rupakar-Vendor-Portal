@@ -7,6 +7,28 @@ export type VendorOrder = { _id: string; parentOrderId: string; vendorId: string
 export type VendorOrderPage = { items: VendorOrder[]; page: number; limit: number; total: number }
 export type VendorOrderActionResult = { vendorOrder: VendorOrder; order?: Record<string, unknown>; shipment?: Record<string, unknown> }
 export type DocumentDownload = { documentNumber?: string; invoiceNumber?: string; downloadUrl: string }
+export type CancellationRequest = {
+  _id: string
+  requestNumber: string
+  orderId: string
+  vendorOrderId: string
+  customerId: string
+  vendorId: string
+  productId: string
+  variantId: string
+  productName: string
+  sku?: string
+  quantity: number
+  unitPrice: number
+  refundAmount: number
+  reason: string
+  customerNote?: string
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED'
+  rejectionReason?: string
+  refundId?: string
+  createdAt: string
+  reviewedAt?: string
+}
 
 const query = (params: Record<string, string | number | undefined>) => {
   const search = new URLSearchParams()
@@ -24,4 +46,9 @@ export const orderService = {
   ship: (id: string) => api.post<VendorOrderActionResult>('/vendors/orders/' + id + '/ship', {}),
   invoice: (id: string) => api.get<DocumentDownload>('/vendors/orders/' + id + '/invoice'),
   packingSlip: (id: string) => api.get<DocumentDownload>('/vendors/orders/' + id + '/packing-slip'),
+  cancellationRequests: (params: { page?: number; limit?: number; status?: string } = {}) =>
+    api.get<{ items: CancellationRequest[]; total: number; page: number; limit: number; totalPages: number }>(`/vendors/cancellation-requests${query(params)}`),
+  approveCancellation: (id: string) => api.post<{ success: boolean; data: any }>('/vendors/cancellation-requests/' + id + '/approve', {}),
+  rejectCancellation: (id: string, rejectionReason: string) =>
+    api.post<{ success: boolean; data: any }>('/vendors/cancellation-requests/' + id + '/reject', { rejectionReason }),
 }

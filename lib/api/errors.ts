@@ -1,22 +1,62 @@
 export class ApiError extends Error {
   readonly status: number
   readonly code?: string
+  readonly requestId?: string
 
-  constructor(message: string, status: number, code?: string) {
+  constructor(message: string, status: number, code?: string, requestId?: string) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.code = code
+    this.requestId = requestId
   }
 }
 
-  export const getApiErrorMessage = (error: unknown, fallback = 'Request failed') => {
-    if (!(error instanceof ApiError)) return error instanceof Error ? error.message : fallback
-    if (error.status === 401 || error.code === 'UNAUTHORIZED') return 'Your seller session has expired. Please sign in again.'
-    if (error.status === 403 || error.code === 'FORBIDDEN') return 'You do not have permission to perform this action.'
-    if (error.status === 404 || error.code === 'ROUTE_NOT_FOUND') return 'The requested route or resource was not found.'
-    if (error.status === 413 || error.code === 'IMAGE_TOO_LARGE') return 'Each image must be 2 MB or smaller.'
-    if (error.status === 400 || error.code === 'VALIDATION_ERROR') return error.message || 'Please check the product details and try again.'
-    if (error.status >= 500) return error.message || 'The server could not complete this request. Please try again.'
-    return error.message || fallback
+export const getApiErrorMessage = (error: unknown, fallback = 'Request failed'): string => {
+  if (!(error instanceof ApiError)) {
+    return error instanceof Error ? error.message : fallback
   }
+
+  // Business error code mappings
+  if (error.code === 'ORDER_ALREADY_PACKED') {
+    return 'This order can no longer be cancelled or modified because it has already been packed.'
+  }
+  if (error.code === 'INVALID_VENDOR_ORDER_TRANSITION') {
+    return error.message || 'Order cannot be transitioned to that status from its current state.'
+  }
+  if (error.code === 'INSUFFICIENT_STOCK') {
+    return 'Insufficient inventory stock to complete this fulfillment step.'
+  }
+  if (error.code === 'REFUND_FAILED') {
+    return "We couldn't complete the refund yet. The order state has not been modified. Please try again."
+  }
+  if (error.code === 'DUPLICATE_CANCELLATION_REQUEST') {
+    return 'A cancellation request is already pending for this item.'
+  }
+  if (error.code === 'VENDOR_NOT_APPROVED') {
+    return 'Only approved vendors can manage orders.'
+  }
+  if (error.status === 401 || error.code === 'UNAUTHORIZED') {
+    return 'Your seller session has expired. Please sign in again.'
+  }
+  if (error.status === 403 || error.code === 'FORBIDDEN') {
+    return 'You do not have permission to perform this action.'
+  }
+  if (error.status === 404 || error.code === 'ROUTE_NOT_FOUND' || error.code === 'ORDER_NOT_FOUND') {
+    return 'The requested route or resource was not found.'
+  }
+  if (error.status === 413 || error.code === 'IMAGE_TOO_LARGE') {
+    return 'Each image must be 2 MB or smaller.'
+  }
+  if (error.status === 400 || error.code === 'VALIDATION_ERROR') {
+    return error.message || 'Please check the details and try again.'
+  }
+
+  const supportSuffix = error.requestId ? ` If the problem continues, contact support with Request ID ${error.requestId}.` : ''
+
+  if (error.status >= 500) {
+    return `The server could not complete this request right now. Please try again.${supportSuffix}`
+  }
+
+  return error.message ? `${error.message}${supportSuffix}` : `${fallback}${supportSuffix}`
+}

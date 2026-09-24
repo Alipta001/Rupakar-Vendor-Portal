@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { orderService, type CancellationRequest, type VendorOrder } from '@/features/orders/services/order-service'
+import { getApiErrorMessage } from '@/lib/api/errors'
 import { statusLabel, statusTone } from '@/features/seller/types/seller.types'
 
 const money = (value: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value)
@@ -46,7 +47,7 @@ export function OrderDetailsPage({ setView: _setView }: { setView: (view: 'order
       await orderService.approveCancellation(requestId)
       load()
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to approve cancellation')
+      setError(getApiErrorMessage(cause, 'Unable to approve cancellation'))
     } finally {
       setCancellationActionLoading(false)
     }
@@ -62,7 +63,7 @@ export function OrderDetailsPage({ setView: _setView }: { setView: (view: 'order
       setRejectionReason('')
       load()
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to reject cancellation')
+      setError(getApiErrorMessage(cause, 'Unable to reject cancellation'))
     } finally {
       setCancellationActionLoading(false)
     }
@@ -100,7 +101,7 @@ export function OrderDetailsPage({ setView: _setView }: { setView: (view: 'order
       else if (validAction.action === 'ship') await orderService.ship(order._id)
       load()
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to update order')
+      setError(getApiErrorMessage(cause, 'Unable to update order'))
     } finally {
       setSaving(false)
     }
@@ -114,7 +115,7 @@ export function OrderDetailsPage({ setView: _setView }: { setView: (view: 'order
       const document = await orderService[kind](order._id)
       window.open(document.downloadUrl, '_blank', 'noopener,noreferrer')
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Document is not ready')
+      setError(getApiErrorMessage(cause, 'Document is not ready'))
     } finally {
       setDocumentLoading('')
     }

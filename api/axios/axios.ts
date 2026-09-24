@@ -21,8 +21,16 @@ const getAccessToken = () => accessToken || authStorage.getAccessToken()
 const shouldSkipRefresh = (url?: string) => Boolean(url && /^\/auth\/(login|register-seller|refresh|logout|forgot-password|reset-password|verify-otp)/.test(url))
 
 const toApiError = (error: AxiosError) => {
-  const payload = error.response?.data as { message?: string; error?: { message?: string; code?: string }; code?: string } | undefined
-  return new ApiError(payload?.message || payload?.error?.message || error.message || 'Request failed', error.response?.status || 0, payload?.code || payload?.error?.code)
+  const payload = error.response?.data as {
+    message?: string
+    error?: { message?: string; code?: string }
+    code?: string
+    requestId?: string
+  } | undefined
+  const requestId = payload?.requestId || (error.response?.headers?.['x-request-id'] as string | undefined)
+  const message = payload?.error?.message || payload?.message || error.message || 'Request failed'
+  const code = payload?.error?.code || payload?.code
+  return new ApiError(message, error.response?.status || 0, code, requestId)
 }
 
 const refreshAccessToken = async () => {

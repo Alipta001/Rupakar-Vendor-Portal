@@ -1,5 +1,5 @@
 const LOCAL_API_BASE_URL = 'http://localhost:4000/api/v1'
-const PRODUCTION_API_BASE_URL = 'https://rupakar-backend.onrender.com/api/v1'
+const PRODUCTION_API_BASE_URL = 'https://api.rupakar.com/api/v1'
 
 const resolveApiBaseUrl = () => {
   const configuredUrl = process.env.NEXT_PUBLIC_API_URL?.trim()

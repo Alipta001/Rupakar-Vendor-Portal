@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
+import { Clock, RefreshCw, LogOut } from 'lucide-react'
 import { api, setAccessToken } from '@/api'
 import { AUTH_EXPIRED_EVENT } from '@/lib/auth/auth-session'
 import { profileService } from '@/features/profile/services/profile-service'
@@ -50,10 +51,97 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() { const context = useContext(AuthContext); if (!context) throw new Error('useAuth must be used within AuthProvider'); return context }
 
 export function SellerAuthGate({ children }: { children: ReactNode }) {
-  const { status } = useAuth()
+  const { status, refresh, logout } = useAuth()
   const router = useRouter()
+  const [checking, setChecking] = useState(false)
+
+  const handleRefresh = async () => {
+    setChecking(true)
+    try {
+      await refresh()
+    } finally {
+      setChecking(false)
+    }
+  }
+
   useEffect(() => { if (status === 'unauthenticated') router.replace('/login') }, [status, router])
   if (status === 'loading' || status === 'unauthenticated') return <main className="auth-shell" aria-live="polite"><p className="subtle">Checking your seller session…</p></main>
-  if (status !== 'authenticated') return <main className="auth-shell"><section className="auth-card"><p className="eyebrow">Seller access</p><h1>Seller access needs review</h1><p className="subtle">Your account does not currently have an approved seller relationship.</p></section></main>
+  if (status !== 'authenticated') {
+    return (
+      <main className="auth-shell">
+        <div className="auth-brand">
+          <div className="brand-mark">R</div>
+          <div>
+            <b>RUPAKAR</b>
+            <span>SELLER STUDIO</span>
+          </div>
+        </div>
+        <section className="auth-card pending-approval-card">
+          <div className="pending-badge">
+            <span className="pulse-dot" />
+            <span>Verification In Progress</span>
+          </div>
+          <div className="auth-icon pending-icon">
+            <Clock className="w-5 h-5 text-[#b94d25]" />
+          </div>
+          <p className="eyebrow">Seller Account Status</p>
+          <h1>Seller Account Pending Approval</h1>
+          <p className="subtle">
+            Your seller account has been created successfully, but it is waiting for approval. Once your account is approved, you will be able to access the seller dashboard.
+          </p>
+
+          <div className="pending-steps" aria-label="Approval process steps">
+            <div className="pending-step completed">
+              <span className="step-num">✓</span>
+              <div>
+                <strong>Registration Received</strong>
+                <p>Your seller profile and credentials have been recorded.</p>
+              </div>
+            </div>
+            <div className="pending-step active">
+              <span className="step-num">2</span>
+              <div>
+                <strong>Artisan Curation & Review</strong>
+                <p>Our team verifies your craft lineage and store details.</p>
+              </div>
+            </div>
+            <div className="pending-step upcoming">
+              <span className="step-num">3</span>
+              <div>
+                <strong>Studio Activation</strong>
+                <p>You can list products, manage inventory, and fulfill orders.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="pending-actions">
+            <button
+              type="button"
+              className="primary-button"
+              onClick={handleRefresh}
+              disabled={checking}
+            >
+              <RefreshCw className={`w-4 h-4 ${checking ? 'animate-spin' : ''}`} />
+              <span>{checking ? 'Checking Status…' : 'Check Approval Status'}</span>
+            </button>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={logout}
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Sign Out</span>
+            </button>
+          </div>
+
+          <p className="pending-help">
+            Have questions about your onboarding? Write to us at{' '}
+            <a href="mailto:rupakarsupport@gmail.com">rupakarsupport@gmail.com</a>
+          </p>
+        </section>
+        <p className="auth-footer">Protected seller access · RUPAKAR Marketplace</p>
+      </main>
+    )
+  }
   return <>{children}</>
 }

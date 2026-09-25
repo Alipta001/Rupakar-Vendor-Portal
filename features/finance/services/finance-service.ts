@@ -9,8 +9,13 @@ export type PayoutRecord = { _id: string; requestedAmount: number; eligibleAmoun
 export type PayoutPage = { items: PayoutRecord[]; page: number; limit: number; total: number }
 
 export const financeService = {
-  ledger: (page = 1, limit = 20) => api.get<LedgerPage>(`/vendor/finance/ledger?page=${page}&limit=${limit}`),
-  summary: () => api.get<LedgerSummary>('/vendor/finance/summary'),
-  balance: () => api.get<SettlementBalance>('/vendor/finance/balance'),
-  payouts: (page = 1, limit = 20) => api.get<PayoutPage>(`/vendor/finance/payouts?page=${page}&limit=${limit}`),
+  ledger: (page = 1, limit = 20, options?: { signal?: AbortSignal }) =>
+    api.get<LedgerPage>(`/vendor/finance/ledger?page=${page}&limit=${limit}`, { signal: options?.signal }),
+  summary: (options?: { signal?: AbortSignal }) =>
+    api.get<LedgerSummary>('/vendor/finance/summary', { signal: options?.signal }),
+  balance: (options?: { signal?: AbortSignal }) =>
+    api.get<SettlementBalance>('/vendor/finance/balance', { signal: options?.signal }),
+  payouts: (page = 1, limit = 20, options?: { signal?: AbortSignal }) =>
+    api.get<PayoutPage>(`/vendor/finance/payouts?page=${page}&limit=${limit}`, { signal: options?.signal }),
 }
+

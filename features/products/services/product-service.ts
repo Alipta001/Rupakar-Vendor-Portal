@@ -98,8 +98,9 @@ const query = (params: Record<string, string | number | undefined>) => {
 }
 
 export const productService = {
-  list: (params: { page?: number; limit?: number; status?: ProductStatus; search?: string } = {}) => api.get<ProductPage>(`/vendor/products${query(params)}`),
-  get: (id: string) => api.get<SellerProduct>(`/vendor/products/${id}`),
+  list: (params: { page?: number; limit?: number; status?: ProductStatus; search?: string } = {}, options?: { signal?: AbortSignal }) =>
+    api.get<ProductPage>(`/vendor/products${query(params)}`, { signal: options?.signal }),
+  get: (id: string, options?: { signal?: AbortSignal }) => api.get<SellerProduct>(`/vendor/products/${id}`, { signal: options?.signal }),
   create: (payload: ProductInput) => api.post<SellerProduct>('/vendor/products', payload),
   update: (id: string, payload: Partial<ProductInput> & { status?: ProductStatus }) => api.patch<SellerProduct>(`/vendor/products/${id}`, payload),
   submit: (id: string) => api.post<SellerProduct>(`/vendor/products/${id}/submit`, {}),
@@ -113,7 +114,8 @@ export const productService = {
   },
   deleteImage: (productId: string, imageId: string) => api.delete<{ deleted: boolean; imageId: string }>(`/vendor/products/${productId}/images/${imageId}`),
   updateImage: (productId: string, imageId: string, payload: { altText?: string; sortOrder?: number; isPrimary?: boolean }) => api.patch<ProductImage>(`/vendor/products/${productId}/images/${imageId}`, payload),
-  inventory: (params: { page?: number; limit?: number } = {}) => api.get<InventoryPage>(`/vendor/inventory${query(params)}`),
+  inventory: (params: { page?: number; limit?: number } = {}, options?: { signal?: AbortSignal }) =>
+    api.get<InventoryPage>(`/vendor/inventory${query(params)}`, { signal: options?.signal }),
   adjustInventory: (variantId: string, delta: number, reason = 'SELLER_ADJUSTMENT') => {
     if (!variantId.trim()) throw new Error('A product variant ID is required before inventory can be updated.')
     return api.patch<InventoryItem>(`${endpoints.inventory}/${encodeURIComponent(variantId)}`, { delta, reason })

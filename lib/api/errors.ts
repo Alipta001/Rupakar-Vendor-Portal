@@ -12,10 +12,41 @@ export class ApiError extends Error {
   }
 }
 
+export const isColdStartError = (error: unknown): boolean => {
+  if (error instanceof ApiError) {
+    return error.status === 502 || error.status === 503 || error.status === 504 || error.status === 0
+  }
+  const err = error as any
+  const status = err?.status || err?.response?.status
+  const code = err?.code
+  const message = String(err?.message || '').toLowerCase()
+  return (
+    status === 502 ||
+    status === 503 ||
+    status === 504 ||
+    code === 'ECONNABORTED' ||
+    code === 'ERR_NETWORK' ||
+    code === 'ETIMEDOUT' ||
+    message.includes('timeout') ||
+    message.includes('network error')
+  )
+}
+
 export const getApiErrorMessage = (error: unknown, fallback = 'Request failed'): string => {
+  if (isColdStartError(error)) {
+    return "We're taking a little longer than usual to connect. The service may be waking up."
+  }
+
+  const err = error as any
+  const payloadMessage = err?.response?.data?.message || err?.response?.data?.error?.message || err?.response?.data?.error
+
   if (!(error instanceof ApiError)) {
+    if (typeof payloadMessage === 'string' && payloadMessage.trim()) {
+      return payloadMessage
+    }
     return error instanceof Error ? error.message : fallback
   }
+
 
   // Business error code mappings
   if (error.code === 'ORDER_ALREADY_PACKED') {

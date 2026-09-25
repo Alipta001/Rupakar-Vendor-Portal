@@ -42,5 +42,7 @@ export type AnalyticsData = {
 }
 
 export const analyticsService = {
-  get: (range: AnalyticsRange = '30d') => api.get<AnalyticsData>(`/vendor/analytics?range=${range}`),
+  get: (range: AnalyticsRange = '30d', options?: { signal?: AbortSignal }) =>
+    api.get<AnalyticsData>(`/vendor/analytics?range=${range}`, { signal: options?.signal }),
 }
+

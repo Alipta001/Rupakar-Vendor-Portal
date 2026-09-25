@@ -1,11 +1,13 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight, MessageSquareText, Package, Star } from 'lucide-react'
+
 import { PageHeader } from '@/components/layout/PageHeader'
 import { MetricCard } from '@/components/ui/MetricCard'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { api } from '@/api'
+import { MetricCardsSkeleton, TableSkeleton, EmptyState, ErrorState } from '@/components/skeletons'
 
 type ReviewListItem = {
   id?: string
@@ -53,31 +55,36 @@ export default function ReviewsRoute() {
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [fetchKey, setFetchKey] = useState(0)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
-    let active = true
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    const controller = new AbortController()
+    abortControllerRef.current = controller
 
     setLoading(true)
     setError('')
 
-    api.get<ReviewListResponse>(`/reviews/vendor?page=${page}&limit=${REVIEW_LIMIT}`)
+    api.get<ReviewListResponse>(`/reviews/vendor?page=${page}&limit=${REVIEW_LIMIT}`, { signal: controller.signal })
       .then((result) => {
-        if (!active) return
         setReviews(result.items ?? [])
         setTotal(result.total ?? 0)
       })
       .catch((cause) => {
-        if (!active) return
+        if (cause?.name === 'CanceledError' || cause?.name === 'AbortError') return
         setError(cause instanceof Error ? cause.message : 'Unable to load seller reviews')
       })
       .finally(() => {
-        if (active) setLoading(false)
+        setLoading(false)
       })
 
     return () => {
-      active = false
+      controller.abort()
     }
-  }, [page])
+  }, [page, fetchKey])
 
   const stats = useMemo(() => {
     const published = reviews.filter((review) => review.status !== 'HIDDEN' && review.status !== 'FLAGGED').length
@@ -92,6 +99,8 @@ export default function ReviewsRoute() {
   }, [reviews])
 
   const pageCount = Math.max(1, Math.ceil(total / REVIEW_LIMIT))
+  const isInitialLoading = loading && reviews.length === 0
+  const isBackgroundFetching = loading && reviews.length > 0
 
   return (
     <main className="workspace">
@@ -101,46 +110,69 @@ export default function ReviewsRoute() {
         description="See how shoppers rate your products and what they are saying."
       />
 
-      <div className="metrics-grid">
-        <MetricCard
-          label="Average rating"
-          value={reviews.length > 0 ? stats.average.toFixed(1) : '0.0'}
-          change={reviews.length > 0 ? `${reviews.length} reviews loaded` : 'No reviews yet'}
-          icon={Star}
-        />
-        <MetricCard
-          label="Published"
-          value={String(stats.published)}
-          change="Visible reviews"
-          icon={MessageSquareText}
-          accent="green"
-        />
-        <MetricCard
-          label="Total"
-          value={String(total)}
-          change="Across your catalog"
-          icon={Package}
-          accent="purple"
-        />
-      </div>
+      {isInitialLoading ? (
+        <MetricCardsSkeleton count={3} />
+      ) : (
+        <div className="metrics-grid">
+          <MetricCard
+            label="Average rating"
+            value={reviews.length > 0 ? stats.average.toFixed(1) : '0.0'}
+            change={reviews.length > 0 ? `${reviews.length} reviews loaded` : 'No reviews yet'}
+            icon={Star}
+          />
+          <MetricCard
+            label="Published"
+            value={String(stats.published)}
+            change="Visible reviews"
+            icon={MessageSquareText}
+            accent="green"
+          />
+          <MetricCard
+            label="Total"
+            value={String(total)}
+            change="Across your catalog"
+            icon={Package}
+            accent="purple"
+          />
+        </div>
+      )}
 
-      {error && (
-        <div className="auth-notice error" role="alert">
+      {error && reviews.length > 0 && (
+        <div className="auth-notice error" role="alert" style={{ margin: '1rem 0' }}>
           {error}
         </div>
       )}
 
-      {loading ? (
-        <section className="panel">
-          <p className="subtle">Loading reviews…</p>
+      {isBackgroundFetching && (
+        <div className="text-xs text-[var(--seller-text-muted)] animate-pulse" style={{ margin: '0.5rem 0' }}>
+          Refreshing reviews…
+        </div>
+      )}
+
+      {isInitialLoading ? (
+        <section className="panel table-panel" style={{ marginTop: '1.5rem', padding: '1.5rem' }}>
+          <TableSkeleton rows={5} cols={5} />
         </section>
+      ) : error && reviews.length === 0 ? (
+        <div style={{ marginTop: '1.5rem' }}>
+          <ErrorState
+            error={error}
+            onRetry={() => {
+              setError('')
+              setFetchKey((k) => k + 1)
+            }}
+          />
+        </div>
       ) : reviews.length === 0 ? (
-        <section className="panel empty-state">
-          <h2>No reviews yet</h2>
-          <p className="subtle">Reviews from customers who purchased your products will appear here.</p>
-        </section>
+        <div className="panel" style={{ marginTop: '1.5rem' }}>
+          <EmptyState
+            title="No reviews yet"
+            description="Reviews from customers who purchased your products will appear here."
+          />
+        </div>
       ) : (
-        <section className="panel table-panel">
+        <section className="panel table-panel" style={{ marginTop: '1.5rem' }}>
+
           <div className="panel-heading">
             <div>
               <h2>Customer reviews</h2>

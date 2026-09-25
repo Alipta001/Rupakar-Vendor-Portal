@@ -13,8 +13,11 @@ export type NotificationItem = {
 export type NotificationPage = { items: NotificationItem[]; page: number; limit: number; total: number; unreadCount: number }
 
 export const notificationService = {
-  list: (page = 1, limit = 20, unreadOnly = false) => api.get<NotificationPage>(`/notifications?page=${page}&limit=${limit}&unreadOnly=${unreadOnly}`),
-  unreadCount: () => api.get<{ unreadCount: number }>('/notifications/unread-count'),
+  list: (page = 1, limit = 20, unreadOnly = false, options?: { signal?: AbortSignal }) =>
+    api.get<NotificationPage>(`/notifications?page=${page}&limit=${limit}&unreadOnly=${unreadOnly}`, { signal: options?.signal }),
+  unreadCount: (options?: { signal?: AbortSignal }) =>
+    api.get<{ unreadCount: number }>('/notifications/unread-count', { signal: options?.signal }),
   markRead: (id: string) => api.patch<{ success: boolean }>(`/notifications/${id}/read`, {}),
   markAllRead: () => api.patch<{ markedCount: number }>('/notifications/read-all', {}),
 }
+

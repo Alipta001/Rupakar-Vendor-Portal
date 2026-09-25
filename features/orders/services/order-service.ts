@@ -38,16 +38,18 @@ const query = (params: Record<string, string | number | undefined>) => {
 }
 
 export const orderService = {
-  list: (params: { page?: number; limit?: number; status?: VendorOrderStatus; search?: string } = {}) => api.get<VendorOrderPage>(`/vendors/orders${query(params)}`),
-  get: (id: string) => api.get<VendorOrder>('/vendors/orders/' + id),
+  list: (params: { page?: number; limit?: number; status?: VendorOrderStatus; search?: string } = {}, options?: { signal?: AbortSignal }) =>
+    api.get<VendorOrderPage>(`/vendors/orders${query(params)}`, { signal: options?.signal }),
+  get: (id: string, options?: { signal?: AbortSignal }) => api.get<VendorOrder>('/vendors/orders/' + id, { signal: options?.signal }),
   pack: (id: string) => api.post<VendorOrderActionResult>('/vendors/orders/' + id + '/pack', {}),
   process: (id: string) => api.post<VendorOrderActionResult>('/vendors/orders/' + id + '/process', {}),
   readyToShip: (id: string) => api.post<VendorOrderActionResult>('/vendors/orders/' + id + '/ready-to-ship', {}),
   ship: (id: string) => api.post<VendorOrderActionResult>('/vendors/orders/' + id + '/ship', {}),
   invoice: (id: string) => api.get<DocumentDownload>('/vendors/orders/' + id + '/invoice'),
   packingSlip: (id: string) => api.get<DocumentDownload>('/vendors/orders/' + id + '/packing-slip'),
-  cancellationRequests: (params: { page?: number; limit?: number; status?: string } = {}) =>
-    api.get<{ items: CancellationRequest[]; total: number; page: number; limit: number; totalPages: number }>(`/vendors/cancellation-requests${query(params)}`),
+  cancellationRequests: (params: { page?: number; limit?: number; status?: string } = {}, options?: { signal?: AbortSignal }) =>
+    api.get<{ items: CancellationRequest[]; total: number; page: number; limit: number; totalPages: number }>(`/vendors/cancellation-requests${query(params)}`, { signal: options?.signal }),
+
   approveCancellation: (id: string) => api.post<{ success: boolean; data: any }>('/vendors/cancellation-requests/' + id + '/approve', {}),
   rejectCancellation: (id: string, rejectionReason: string) =>
     api.post<{ success: boolean; data: any }>('/vendors/cancellation-requests/' + id + '/reject', { rejectionReason }),

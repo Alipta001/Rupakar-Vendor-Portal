@@ -24,6 +24,7 @@ const query = (params: Record<string, string | number | undefined>) => {
 }
 
 export const inventoryService = {
-  list: (params: { page?: number; limit?: number; search?: string; status?: InventoryStatus } = {}) => api.get<InventoryPage>(`/vendor/inventory${query(params)}`),
+  list: (params: { page?: number; limit?: number; search?: string; status?: InventoryStatus } = {}, options?: { signal?: AbortSignal }) =>
+    api.get<InventoryPage>(`/vendor/inventory${query(params)}`, { signal: options?.signal }),
   adjust: (variantId: string, delta: number, reason = 'SELLER_ADJUSTMENT') => api.patch<InventoryItem>(`/vendor/inventory/${variantId}`, { delta, reason }),
 }

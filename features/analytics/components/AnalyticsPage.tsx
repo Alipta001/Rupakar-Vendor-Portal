@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
+
   BarChart3,
   CheckCircle2,
   Clock,
   IndianRupee,
   Package,
-  RefreshCw,
   ShoppingBag,
   TrendingUp,
   Truck,
@@ -22,6 +22,7 @@ import {
   type AnalyticsRange,
 } from '@/features/analytics/services/analytics-service'
 import { statusLabel, statusTone } from '@/features/seller/types/seller.types'
+import { MetricCardsSkeleton, TableSkeleton, Skeleton, ErrorState } from '@/components/skeletons'
 
 const money = (value: number) =>
   new Intl.NumberFormat('en-IN', {
@@ -43,26 +44,37 @@ export function AnalyticsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [hoverIndex, setHoverIndex] = useState<number | null>(null)
+  const [fetchKey, setFetchKey] = useState(0)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
-  const load = (selectedRange: AnalyticsRange) => {
+  useEffect(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+
     setLoading(true)
     setError('')
+
     analyticsService
-      .get(selectedRange)
+      .get(range, { signal: controller.signal })
       .then((res) => {
         setData(res)
       })
       .catch((cause) => {
+        if (cause?.name === 'CanceledError' || cause?.name === 'AbortError') return
         setError(cause instanceof Error ? cause.message : 'Unable to load analytics data')
       })
       .finally(() => {
         setLoading(false)
       })
-  }
 
-  useEffect(() => {
-    load(range)
-  }, [range])
+    return () => {
+      controller.abort()
+    }
+  }, [range, fetchKey])
+
 
   const trend = data?.salesTrend || []
   const maxRevenue = Math.max(1, ...trend.map((p) => p.revenue || 0))
@@ -129,20 +141,47 @@ export function AnalyticsPage() {
         }
       />
 
-      {error && (
+      {loading && data && (
+        <div className="text-xs text-[var(--seller-text-muted)] animate-pulse">
+          Refreshing analytics for {range.toUpperCase()}…
+        </div>
+      )}
+
+      {error && data && (
         <div className="auth-notice error" role="alert">
           <span>{error}</span>
-          <button className="tiny-button" onClick={() => load(range)}>
-            <RefreshCw /> Retry
+          <button className="tiny-button" onClick={() => setFetchKey((k) => k + 1)}>
+            Retry
           </button>
         </div>
       )}
 
       {loading && !data ? (
-        <div className="auth-notice" aria-live="polite">
-          Loading analytics metrics…
+        <div className="space-y-6" aria-busy="true" aria-label="Loading analytics">
+          <MetricCardsSkeleton count={5} />
+          <section className="panel" style={{ padding: '1.5rem' }}>
+            <Skeleton className="h-6 w-48 mb-4" />
+            <Skeleton className="h-[220px] w-full rounded" />
+          </section>
+          <div className="main-grid">
+            <section className="panel" style={{ padding: '1.5rem' }}>
+              <TableSkeleton rows={4} cols={3} />
+            </section>
+            <section className="panel" style={{ padding: '1.5rem' }}>
+              <TableSkeleton rows={4} cols={3} />
+            </section>
+          </div>
         </div>
+      ) : error && !data ? (
+        <ErrorState
+          error={error}
+          onRetry={() => {
+            setError('')
+            setFetchKey((k) => k + 1)
+          }}
+        />
       ) : (
+
         <>
           <div className="metrics-grid">
             <MetricCard

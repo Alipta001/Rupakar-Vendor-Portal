@@ -11,7 +11,8 @@ export type VerificationState = {
 }
 
 export const verificationService = {
-  get: () => api.get<VerificationState>('/vendors/me/verification'),
+  get: (options?: { signal?: AbortSignal }) => api.get<VerificationState>('/vendors/me/verification', { signal: options?.signal }),
   submitDocument: (payload: { documentType: string; documentNumber?: string; storageKey: string }) => api.post<VerificationDocument>('/vendors/documents', payload),
+
   submitBankAccount: (payload: { accountHolderName: string; accountNumber: string; bankName: string; branchName?: string; ifscCode: string; accountType?: string }) => api.post<{ id: string; maskedAccountNumber: string }>('/vendors/bank-account', payload),
 }

@@ -1,13 +1,15 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AlertTriangle, ArrowLeft, Check, Download, MapPin, Package, Printer, Send, ShieldCheck, Truck, X } from 'lucide-react'
+
 import { useParams, useRouter } from 'next/navigation'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { orderService, type CancellationRequest, type VendorOrder } from '@/features/orders/services/order-service'
 import { getApiErrorMessage } from '@/lib/api/errors'
 import { statusLabel, statusTone } from '@/features/seller/types/seller.types'
+import { OrderDetailSkeleton, ErrorState } from '@/components/skeletons'
 
 const money = (value: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value)
 const date = (value?: string) => value ? new Date(value).toLocaleString('en-IN') : 'Date unavailable'
@@ -24,15 +26,27 @@ export function OrderDetailsPage({ setView: _setView }: { setView: (view: 'order
   const [rejectingId, setRejectingId] = useState<string | null>(null)
   const [rejectionReason, setRejectionReason] = useState('')
   const [cancellationActionLoading, setCancellationActionLoading] = useState(false)
+  const [fetchKey, setFetchKey] = useState(0)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   const load = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+
     setLoading(true)
-    orderService.get(orderId)
+    setError('')
+    orderService.get(orderId, { signal: controller.signal })
       .then(setOrder)
-      .catch((cause) => setError(cause instanceof Error ? cause.message : 'Unable to load order'))
+      .catch((cause) => {
+        if (cause?.name === 'CanceledError' || cause?.name === 'AbortError') return
+        setError(cause instanceof Error ? cause.message : 'Unable to load order')
+      })
       .finally(() => setLoading(false))
 
-    orderService.cancellationRequests({ limit: 50 })
+    orderService.cancellationRequests({ limit: 50 }, { signal: controller.signal })
       .then((res) => {
         const list = res?.items || []
         setCancellations(list.filter((c) => String(c.vendorOrderId) === String(orderId) || String(c.orderId) === String(orderId)))
@@ -43,6 +57,7 @@ export function OrderDetailsPage({ setView: _setView }: { setView: (view: 'order
   const handleApproveCancellation = async (requestId: string) => {
     setCancellationActionLoading(true)
     setError('')
+
     try {
       await orderService.approveCancellation(requestId)
       load()
@@ -69,7 +84,14 @@ export function OrderDetailsPage({ setView: _setView }: { setView: (view: 'order
     }
   }
 
-  useEffect(() => { load() }, [orderId])
+  useEffect(() => {
+    load()
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
+  }, [orderId, fetchKey])
 
   const address = useMemo(() => order?.parent?.shippingAddressSnapshot || {}, [order])
 
@@ -121,8 +143,38 @@ export function OrderDetailsPage({ setView: _setView }: { setView: (view: 'order
     }
   }
 
-  if (loading) return <main className="workspace"><p className="subtle">Loading order…</p></main>
-  if (!order) return <main className="workspace"><div className="auth-notice error" role="alert">{error || 'Order unavailable.'}</div></main>
+  if (loading && !order) {
+    return (
+      <main className="workspace">
+        <OrderDetailSkeleton />
+      </main>
+    )
+  }
+
+  if (error && !order) {
+    return (
+      <main className="workspace">
+        <ErrorState
+          error={error}
+          onRetry={() => {
+            setError('')
+            setFetchKey((k) => k + 1)
+          }}
+        />
+      </main>
+    )
+  }
+
+  if (!order) {
+    return (
+      <main className="workspace">
+        <div className="auth-notice error" role="alert">
+          Order unavailable.
+        </div>
+      </main>
+    )
+  }
+
 
   const customerAddress = [
     address.name,

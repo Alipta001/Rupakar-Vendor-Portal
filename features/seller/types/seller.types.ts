@@ -1,4 +1,4 @@
-export type ProductStatus = 'DRAFT' | 'SUBMITTED' | 'UNDER_REVIEW' | 'APPROVED' | 'PUBLISHED' | 'REJECTED'
+export type ProductStatus = 'DRAFT' | 'SUBMITTED' | 'UNDER_REVIEW' | 'APPROVED' | 'PUBLISHED' | 'REJECTED' | 'UNPUBLISHED' | 'ARCHIVED' | 'EDITED'
 export type OrderStatus = 'PENDING_PAYMENT' | 'PAID' | 'CONFIRMED' | 'PROCESSING' | 'PACKED' | 'READY_TO_SHIP' | 'SHIPPED' | 'IN_TRANSIT' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'DELIVERY_FAILED' | 'CANCELLED' | 'RETURN_REQUESTED' | 'RETURN_IN_TRANSIT' | 'RETURNED' | 'REFUND_PENDING' | 'REFUNDED' | 'PARTIALLY_REFUNDED' | 'FAILED'
 export type VerificationStatus = 'NOT_STARTED' | 'DRAFT' | 'SUBMITTED' | 'UNDER_REVIEW' | 'VERIFIED' | 'REJECTED' | 'ACTION_REQUIRED'
 export type ShipmentStatus = 'PENDING' | 'PACKED' | 'READY_TO_SHIP' | 'SHIPPED' | 'IN_TRANSIT' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'DELIVERY_FAILED' | 'CANCELLED' | 'RETURN_REQUESTED' | 'RETURN_IN_TRANSIT' | 'RETURNED'
@@ -33,4 +33,5 @@ export const orderTransitions: Record<OrderStatus, OrderStatus[]> = {
 }
 export const formatINR = (value:number) => new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:0}).format(value)
 export const statusLabel = (status:string) => status.replaceAll('_',' ').toLowerCase().replace(/(^|\s)\S/g, (letter) => letter.toUpperCase())
-export const statusTone = (status:string) => ['APPROVED','PUBLISHED','DELIVERED','VERIFIED','ACTIVE','PAID'].includes(status) ? 'success' : ['REJECTED','CANCELLED','SUSPENDED','FAILED'].includes(status) ? 'danger' : ['UNDER_REVIEW','SUBMITTED','PROCESSING','READY_TO_SHIP','OUT_FOR_DELIVERY','ACTION_REQUIRED','LOW_STOCK','PENDING'].includes(status) ? 'warning' : 'neutral'
+export const statusTone = (status:string) => ['APPROVED','PUBLISHED','DELIVERED','VERIFIED','ACTIVE','PAID'].includes(status) ? 'success' : ['REJECTED','CANCELLED','SUSPENDED','FAILED'].includes(status) ? 'danger' : ['UNDER_REVIEW','SUBMITTED','EDITED','PROCESSING','READY_TO_SHIP','OUT_FOR_DELIVERY','ACTION_REQUIRED','LOW_STOCK','PENDING'].includes(status) ? 'warning' : 'neutral'
+

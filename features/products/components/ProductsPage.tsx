@@ -10,7 +10,15 @@ import { statusLabel, statusTone } from '@/features/seller/types/seller.types'
 import type { View } from '@/features/seller/types/view.types'
 import { TableSkeleton, EmptyState, ErrorState } from '@/components/skeletons'
 
-const statuses: Array<{ label: string; value?: ProductStatus }> = [{ label: 'All products' }, { label: 'Published', value: 'PUBLISHED' }, { label: 'Under review', value: 'UNDER_REVIEW' }, { label: 'Drafts', value: 'DRAFT' }, { label: 'Rejected', value: 'REJECTED' }]
+const statuses: Array<{ label: string; value?: ProductStatus }> = [
+  { label: 'All products' },
+  { label: 'Published', value: 'PUBLISHED' },
+  { label: 'Under review', value: 'UNDER_REVIEW' },
+  { label: 'Edited', value: 'EDITED' },
+  { label: 'Drafts', value: 'DRAFT' },
+  { label: 'Unpublished', value: 'UNPUBLISHED' },
+  { label: 'Rejected', value: 'REJECTED' },
+]
 
 const productPrice = (product: SellerProduct) => product.variants?.[0]?.price ?? 0
 const productStock = (product: SellerProduct, inventory: InventoryItem[]) => {

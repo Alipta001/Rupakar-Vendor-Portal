@@ -480,6 +480,13 @@ export function ProductForm({ setView }: { setView: (view: View) => void }) {
         }
       />
 
+      {product && (product.status === 'APPROVED' || product.status === 'PUBLISHED') && (
+        <div className="auth-notice info" style={{ margin: '0 0 16px 0' }}>
+          <Info size={16} style={{ display: 'inline', marginRight: '6px' }} />
+          Notice: Saving changes to this approved or published product will transition it to Edited status and temporarily unpublish it for marketplace admin review.
+        </div>
+      )}
+
       <div className="product-editor">
         {/* Step Navigation Sidebar */}
         <aside className="editor-steps">

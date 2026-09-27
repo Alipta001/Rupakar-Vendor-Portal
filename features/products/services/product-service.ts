@@ -1,6 +1,6 @@
 import { api, endpoints } from '@/api'
 
-export type ProductStatus = 'DRAFT' | 'SUBMITTED' | 'UNDER_REVIEW' | 'APPROVED' | 'REJECTED' | 'PUBLISHED' | 'UNPUBLISHED' | 'ARCHIVED'
+export type ProductStatus = 'DRAFT' | 'SUBMITTED' | 'UNDER_REVIEW' | 'APPROVED' | 'REJECTED' | 'PUBLISHED' | 'UNPUBLISHED' | 'ARCHIVED' | 'EDITED'
 
 export type ProductVariant = {
   _id?: string
@@ -104,6 +104,8 @@ export const productService = {
   create: (payload: ProductInput) => api.post<SellerProduct>('/vendor/products', payload),
   update: (id: string, payload: Partial<ProductInput> & { status?: ProductStatus }) => api.patch<SellerProduct>(`/vendor/products/${id}`, payload),
   submit: (id: string) => api.post<SellerProduct>(`/vendor/products/${id}/submit`, {}),
+  delete: (id: string) => api.delete<{ success: boolean; message: string }>(`/vendor/products/${id}`),
+  setOutOfStock: (id: string) => api.post<{ success: boolean; message: string }>(`/vendor/products/${id}/out-of-stock`, {}),
   uploadImage: (productId: string, file: File, metadata: { altText?: string; sortOrder?: number; isPrimary?: boolean } = {}) => {
     const formData = new FormData()
     formData.append('image', file)

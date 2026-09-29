@@ -1,6 +1,6 @@
 import { api } from '@/api'
 
-export type VerificationDocument = { id: string; documentType: string; status: 'PENDING' | 'APPROVED' | 'REJECTED'; submittedAt?: string; verifiedAt?: string | null; rejectionReason?: string | null }
+export type VerificationDocument = { id: string; documentType: string; documentNumber?: string; status: 'PENDING' | 'APPROVED' | 'REJECTED'; submittedAt?: string; verifiedAt?: string | null; rejectionReason?: string | null; viewUrl?: string | null; downloadUrl?: string | null }
 export type VerificationState = {
   vendor: { id: string; businessName: string; status: string; verificationStatus: string; rejectionReason?: string | null; approvedAt?: string | null; rejectedAt?: string | null }
   documents: VerificationDocument[]
@@ -12,7 +12,7 @@ export type VerificationState = {
 
 export const verificationService = {
   get: (options?: { signal?: AbortSignal }) => api.get<VerificationState>('/vendors/me/verification', { signal: options?.signal }),
-  submitDocument: (payload: { documentType: string; documentNumber?: string; storageKey: string }) => api.post<VerificationDocument>('/vendors/documents', payload),
+  submitDocument: (payload: FormData | { documentType: string; documentNumber?: string; storageKey: string }) => api.post<VerificationDocument>('/vendors/documents', payload),
 
   submitBankAccount: (payload: { accountHolderName: string; accountNumber: string; bankName: string; branchName?: string; ifscCode: string; accountType?: string }) => api.post<{ id: string; maskedAccountNumber: string }>('/vendors/bank-account', payload),
 }

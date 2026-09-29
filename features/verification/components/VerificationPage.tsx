@@ -48,7 +48,9 @@ export function VerificationPage({ setView: _setView }: { setView: (view: View) 
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [documentType, setDocumentType] = useState('IDENTITY')
-  const [storageKey, setStorageKey] = useState('')
+  const [documentNumber, setDocumentNumber] = useState('')
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [fetchKey, setFetchKey] = useState(0)
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -81,21 +83,54 @@ export function VerificationPage({ setView: _setView }: { setView: (view: View) 
     }
   }, [fetchKey])
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] || null
+    if (!file) {
+      setSelectedFile(null)
+      return
+    }
+    const MAX_SIZE = 5 * 1024 * 1024
+    if (file.size > MAX_SIZE) {
+      setError('File size exceeds the 5MB limit.')
+      setSelectedFile(null)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+    const allowed = ['application/pdf', 'image/png', 'image/jpeg', 'image/webp']
+    if (!allowed.includes(file.type) && !/\.(pdf|png|jpg|jpeg|webp)$/i.test(file.name)) {
+      setError('Only PDF, PNG, JPG, or WEBP files are allowed.')
+      setSelectedFile(null)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+    setError('')
+    setSelectedFile(file)
+  }
+
   const submitDocument = async () => {
-    if (!storageKey.trim()) {
-      setError('Enter the existing document storage key.')
+    if (!selectedFile) {
+      setError('Please select a file to upload (PDF, PNG, JPG, or WEBP up to 5MB).')
       return
     }
     setSubmitting(true)
     setError('')
     setMessage('')
     try {
-      await verificationService.submitDocument({ documentType, storageKey: storageKey.trim() })
-      setStorageKey('')
-      setMessage('Document submitted for review.')
+      const formData = new FormData()
+      formData.append('documentType', documentType)
+      if (documentNumber.trim()) {
+        formData.append('documentNumber', documentNumber.trim())
+      }
+      formData.append('file', selectedFile)
+
+      await verificationService.submitDocument(formData)
+      setSelectedFile(null)
+      setDocumentNumber('')
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      setMessage('Document uploaded and submitted for review.')
       load()
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to submit document')
+      setError(cause instanceof Error ? cause.message : 'Unable to upload document')
     } finally {
       setSubmitting(false)
     }
@@ -175,7 +210,7 @@ export function VerificationPage({ setView: _setView }: { setView: (view: View) 
                     <Check className={document?.status === 'APPROVED' ? 'check-done' : ''} />
                     <span>
                       <b>{label(type)}</b>
-                      <small>{document ? `${label(document.status)}${document.rejectionReason ? ` · ${document.rejectionReason}` : ''}` : 'Not submitted'}</small>
+                      <small>{document ? `${label(document.status)}${document.documentNumber ? ` · ${document.documentNumber}` : ''}${document.rejectionReason ? ` · ${document.rejectionReason}` : ''}` : 'Not submitted'}</small>
                     </span>
                     <StatusBadge tone={document ? tone(document.status) : 'warning'}>
                       {document ? label(document.status) : 'Missing'}
@@ -189,8 +224,8 @@ export function VerificationPage({ setView: _setView }: { setView: (view: View) 
           <section className="panel verification-checklist">
             <div className="panel-heading">
               <div>
-                <h2>Submit document metadata</h2>
-                <p>Binary upload/storage is not available in the existing backend.</p>
+                <h2>Upload verification document</h2>
+                <p>Upload your KYC and business documents for verification (PDF, PNG, JPG, or WEBP up to 5MB).</p>
               </div>
             </div>
             <div className="form-grid">
@@ -203,13 +238,33 @@ export function VerificationPage({ setView: _setView }: { setView: (view: View) 
                 </select>
               </label>
               <label>
-                <span>Existing storage key</span>
-                <input value={storageKey} onChange={(event) => setStorageKey(event.target.value)} placeholder="documents/vendor/..." />
+                <span>Document number (optional)</span>
+                <input
+                  value={documentNumber}
+                  onChange={(event) => setDocumentNumber(event.target.value)}
+                  placeholder="e.g. GSTIN, PAN or registration number"
+                />
+              </label>
+              <label style={{ gridColumn: 'span 2' }}>
+                <span>Document file (PDF, PNG, JPG, or WEBP, max 5MB)</span>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp"
+                  onChange={handleFileChange}
+                />
               </label>
             </div>
-            <button className="primary-button" disabled={submitting} onClick={submitDocument}>
-              {submitting ? 'Submitting…' : 'Submit for review'}
-            </button>
+            {selectedFile && (
+              <div style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: '#4a433c' }}>
+                Selected: <strong>{selectedFile.name}</strong> ({(selectedFile.size / (1024 * 1024)).toFixed(2)} MB)
+              </div>
+            )}
+            <div style={{ marginTop: '1rem' }}>
+              <button className="primary-button" disabled={submitting || !selectedFile} onClick={submitDocument}>
+                {submitting ? 'Uploading…' : 'Upload & submit for review'}
+              </button>
+            </div>
           </section>
 
           <section className="panel verification-note">

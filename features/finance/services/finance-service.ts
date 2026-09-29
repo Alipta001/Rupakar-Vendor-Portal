@@ -1,11 +1,11 @@
 import { api } from '@/api'
 
-export type LedgerEntry = { _id: string; parentOrderId: string; vendorOrderId: string; vendorId: string; paymentId: string; transactionType: string; status: string; grossAmount: number; commissionRate: number; commissionAmount: number; commissionSource: string; paymentFee: number; adjustmentAmount: number; netAmount: number; currency: string; createdAt?: string }
+export type LedgerEntry = { _id: string; parentOrderId: any; vendorOrderId: string; vendorId: string; paymentId: string; transactionType: string; status: string; eligibilityStatus?: string; holdReason?: string | null; grossAmount: number; commissionRate: number; commissionAmount: number; commissionSource: string; paymentFee: number; adjustmentAmount: number; netAmount: number; currency: string; createdAt?: string }
 export type LedgerPage = { items: LedgerEntry[]; page: number; limit: number; total: number }
 export type LedgerSummary = { grossAmount: number; commissionAmount: number; paymentFee: number; adjustmentAmount: number; netAmount: number; count: number }
 export type SettlementReadiness = { approvedVendor: boolean; verifiedVendor: boolean; bankAccountPresent: boolean; providerConfigured: boolean; payoutRequestsEnabled: boolean; eligible: boolean; reason: string | null }
-export type SettlementBalance = { ledgerNet: number; pendingAmount: number; eligibleAmount: number; settledAmount: number; reservedAmount: number; availableAmount: number; currency: string; readiness: SettlementReadiness }
-export type PayoutRecord = { _id: string; requestedAmount: number; eligibleAmount: number; status: string; provider: string; providerTransferId?: string | null; currency: string; failureReason?: string | null; reversalAmount: number; createdAt?: string }
+export type SettlementBalance = { ledgerNet: number; pendingAmount: number; onHoldAmount?: number; eligibleAmount: number; settledAmount: number; reservedAmount: number; availableAmount: number; currency: string; readiness: SettlementReadiness }
+export type PayoutRecord = { _id: string; payoutNumber?: string; requestedAmount: number; eligibleAmount: number; status: string; provider: string; providerTransferId?: string | null; currency: string; failureReason?: string | null; reversalAmount?: number; processedAt?: string | null; createdAt?: string }
 export type PayoutPage = { items: PayoutRecord[]; page: number; limit: number; total: number }
 
 export const financeService = {

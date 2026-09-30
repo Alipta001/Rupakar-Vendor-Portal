@@ -15,7 +15,13 @@ export function useCreateSupportTicketMutation() {
 }
 
 export function useSupportTicketQuery(id?: string) {
-  return useQuery({ queryKey: ['support-ticket', id], queryFn: () => supportService.get(id as string), enabled: Boolean(id) })
+  return useQuery({
+    queryKey: ['support-ticket', id],
+    queryFn: () => supportService.get(id as string),
+    enabled: Boolean(id),
+    staleTime: 0,
+    refetchOnMount: 'always',
+  })
 }
 
 export function useAddSupportMessageMutation(id: string) {

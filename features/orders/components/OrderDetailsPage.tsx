@@ -10,9 +10,10 @@ import { orderService, type CancellationRequest, type VendorOrder } from '@/feat
 import { getApiErrorMessage } from '@/lib/api/errors'
 import { statusLabel, statusTone } from '@/features/seller/types/seller.types'
 import { OrderDetailSkeleton, ErrorState } from '@/components/skeletons'
+import { formatDateTime } from '@/lib/datetime'
 
 const money = (value: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value)
-const date = (value?: string) => value ? new Date(value).toLocaleString('en-IN') : 'Date unavailable'
+const date = (value?: string) => value ? formatDateTime(value) : 'Date unavailable'
 
 export function OrderDetailsPage({ setView: _setView }: { setView: (view: 'orders') => void }) {
   const { orderId } = useParams<{ orderId: string }>()

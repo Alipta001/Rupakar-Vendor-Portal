@@ -10,10 +10,11 @@ import { orderService, type VendorOrder, type VendorOrderStatus } from '@/featur
 import { statusLabel, statusTone } from '@/features/seller/types/seller.types'
 import type { View } from '@/features/seller/types/view.types'
 import { TableSkeleton, MetricCardsSkeleton, EmptyState, ErrorState } from '@/components/skeletons'
+import { formatDateTime } from '@/lib/datetime'
 
 const statuses: Array<{ label: string; value?: VendorOrderStatus }> = [{ label: 'All orders' }, { label: 'Awaiting payment', value: 'PENDING_PAYMENT' }, { label: 'Confirmed', value: 'CONFIRMED' }, { label: 'Processing', value: 'PROCESSING' }, { label: 'Ready to ship', value: 'READY_TO_SHIP' }, { label: 'Shipped', value: 'SHIPPED' }, { label: 'Delivered', value: 'DELIVERED' }]
 const money = (value: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value)
-const orderDate = (order: VendorOrder) => order.createdAt ? new Date(order.createdAt).toLocaleString('en-IN') : 'Date unavailable'
+const orderDate = (order: VendorOrder) => order.createdAt ? formatDateTime(order.createdAt) : 'Date unavailable'
 
 export function OrdersPage({ setView: _setView, setSelected: _setSelected }: { setView: (view: View) => void; setSelected: (order: never) => void }) {
   const router = useRouter()

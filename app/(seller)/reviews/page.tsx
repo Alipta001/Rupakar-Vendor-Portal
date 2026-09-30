@@ -8,6 +8,7 @@ import { MetricCard } from '@/components/ui/MetricCard'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { api } from '@/api'
 import { MetricCardsSkeleton, TableSkeleton, EmptyState, ErrorState } from '@/components/skeletons'
+import { formatDateTime } from '@/lib/datetime'
 
 type ReviewListItem = {
   id?: string
@@ -45,7 +46,7 @@ type ReviewListResponse = {
 const REVIEW_LIMIT = 10
 
 const money = (value: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value)
-const formatDate = (value?: string) => value ? new Date(value).toLocaleString('en-IN') : 'Date unavailable'
+const formatDate = (value?: string) => value ? formatDateTime(value) : 'Date unavailable'
 const formatId = (value?: string) => value ? value.slice(-8).toUpperCase() : 'N/A'
 const ratingStars = (rating = 0) => Array.from({ length: 5 }, (_, index) => index < Math.round(rating))
 

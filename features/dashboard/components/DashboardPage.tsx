@@ -9,6 +9,7 @@ import type { View } from '@/features/seller/types/view.types'
 import { useAuth } from '@/providers/auth-provider'
 import { useDashboardQuery } from '@/features/dashboard/hooks/use-dashboard-query'
 import { DashboardSkeleton, ErrorState } from '@/components/skeletons'
+import { formatDate } from '@/lib/datetime'
 
 const money = (value: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value || 0)
 
@@ -36,7 +37,7 @@ export function DashboardPage({ setView }: { setView?: (view: View) => void }) {
   const chartMax = Math.max(1, ...chartData.map((entry) => entry.revenue))
 
   return <>
-    <PageHeader eyebrow={new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} title={<>{`Good morning, ${customerName.split(' ')[0] || 'Seller'}`} <span>✦</span></>} description={`Here's what's happening with ${businessName} today.`} action={<button className="primary-button" onClick={() => goTo('/products/new', 'product-new')}><Plus /> Add new product</button>} />
+    <PageHeader eyebrow={formatDate(new Date(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} title={<>{`Good morning, ${customerName.split(' ')[0] || 'Seller'}`} <span>✦</span></>} description={`Here's what's happening with ${businessName} today.`} action={<button className="primary-button" onClick={() => goTo('/products/new', 'product-new')}><Plus /> Add new product</button>} />
     {data?.vendor && <div className="verification-banner"><div className="banner-icon"><ShieldCheck /></div><div><b>{data.finance.readiness.eligible ? 'Your seller profile is verified' : 'Settlement review is in progress'}</b><p>{data.finance.readiness.reason || 'Your store is live and ready to grow. Keep your catalog fresh to reach more customers.'}</p></div><button onClick={() => goTo('/verification', 'verification')}>View verification <ChevronRight /></button></div>}
     {loading && !data && <DashboardSkeleton />}
     {error && !data && <ErrorState error={queryError} onRetry={() => refetch?.() || window.location.reload()} />}
@@ -53,7 +54,7 @@ export function DashboardPage({ setView }: { setView?: (view: View) => void }) {
         <section className="panel quick-panel"><div className="panel-heading"><div><h2>Quick actions</h2><p>Keep your store moving</p></div><Activity className="heading-icon" /></div><div className="quick-list">{quickActions.map((row) => { const Icon = row.icon; return <button key={row.href} onClick={() => goTo(row.href)}><span className={`quick-icon ${row.tone}`}><Icon /></span><span><b>{row.label}</b><small>{row.sub}</small></span><ChevronRight /></button> })}</div></section>
       </div>
       <div className="main-grid">
-        <section className="panel table-panel"><div className="panel-heading"><div><h2>Recent vendor orders</h2><p>Latest sales activity</p></div></div>{data.recentOrders.length ? <div className="table-scroll"><table><thead><tr><th>Order</th><th>Items</th><th>Status</th><th>Total</th></tr></thead><tbody>{data.recentOrders.map((order) => <tr key={order._id}><td><b>#{order._id.slice(-6)}</b><small>{order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-IN') : 'Date unavailable'}</small></td><td>{order.itemNames.length ? order.itemNames.join(', ') : `${order.itemCount} item${order.itemCount === 1 ? '' : 's'}`}</td><td>{order.status}</td><td>{money(order.total)}</td></tr>)}</tbody></table></div> : <div className="auth-notice">No recent vendor orders yet.</div>}</section>
+        <section className="panel table-panel"><div className="panel-heading"><div><h2>Recent vendor orders</h2><p>Latest sales activity</p></div></div>{data.recentOrders.length ? <div className="table-scroll"><table><thead><tr><th>Order</th><th>Items</th><th>Status</th><th>Total</th></tr></thead><tbody>{data.recentOrders.map((order) => <tr key={order._id}><td><b>#{order._id.slice(-6)}</b><small>{order.createdAt ? formatDate(order.createdAt) : 'Date unavailable'}</small></td><td>{order.itemNames.length ? order.itemNames.join(', ') : `${order.itemCount} item${order.itemCount === 1 ? '' : 's'}`}</td><td>{order.status}</td><td>{money(order.total)}</td></tr>)}</tbody></table></div> : <div className="auth-notice">No recent vendor orders yet.</div>}</section>
         <section className="panel table-panel"><div className="panel-heading"><div><h2>Low stock</h2><p>Inventory attention required</p></div></div>{data.lowStockItems.length ? <div className="table-scroll"><table><thead><tr><th>Product</th><th>Available</th><th>Threshold</th></tr></thead><tbody>{data.lowStockItems.map((item) => <tr key={item._id}><td>{item.productName}</td><td>{item.availableQuantity}</td><td>{item.lowStockThreshold}</td></tr>)}</tbody></table></div> : <div className="auth-notice">No low stock items.</div>}</section>
       </div>
     </>}

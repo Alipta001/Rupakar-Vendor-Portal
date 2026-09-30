@@ -13,6 +13,8 @@ export interface AuthState { seller?: SellerProfile; isLoading: boolean; error?:
 
 type BackendAuth = { user: UserProfile; accessToken: string }
 
+import { formatDateTime } from '@/lib/datetime'
+
 const emptySeller = (id = ''): SellerProfile => ({ id, storeName: '', ownerName: '', email: '', mobile: '', role: 'VENDOR', verified: false, status: 'PAUSED', lastLogin: '' })
 const mapSeller = (user: UserProfile, vendor: VendorProfile): SellerProfile => ({
   id: vendor.id,
@@ -23,7 +25,7 @@ const mapSeller = (user: UserProfile, vendor: VendorProfile): SellerProfile => (
   role: user.role,
   verified: vendor?.verificationStatus === 'VERIFIED',
   status: vendor?.status === 'SUSPENDED' || vendor?.status === 'BLOCKED' ? 'SUSPENDED' : vendor?.status === 'APPROVED' ? 'ACTIVE' : 'PAUSED',
-  lastLogin: new Date().toLocaleString('en-IN'),
+  lastLogin: formatDateTime(new Date()),
 })
 
 const unwrapError = (error: unknown) => error instanceof Error ? error.message : 'Request failed'

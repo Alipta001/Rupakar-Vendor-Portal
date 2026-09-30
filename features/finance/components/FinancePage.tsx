@@ -29,6 +29,7 @@ import {
   type SettlementBalance,
 } from '@/features/finance/services/finance-service'
 import { MetricCardsSkeleton, TableSkeleton, EmptyState, ErrorState } from '@/components/skeletons'
+import { formatDateTime } from '@/lib/datetime'
 
 const money = (value?: number) =>
   new Intl.NumberFormat('en-IN', {
@@ -38,7 +39,7 @@ const money = (value?: number) =>
   }).format(value || 0)
 
 const date = (value?: string) =>
-  value ? new Date(value).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '—'
+  value ? formatDateTime(value) : '—'
 
 export function FinancePage() {
   const [entries, setEntries] = useState<LedgerEntry[]>([])

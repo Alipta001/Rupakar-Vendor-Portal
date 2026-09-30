@@ -7,9 +7,10 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 import { verificationService, type VerificationState } from '@/features/verification/services/verification-service'
 import type { View } from '@/features/seller/types/view.types'
 import { Skeleton, ErrorState } from '@/components/skeletons'
+import { formatDate } from '@/lib/datetime'
 
 const label = (value: string) => value.replaceAll('_', ' ').toLowerCase().replace(/(^|\s)\S/g, (letter) => letter.toUpperCase())
-const date = (value?: string | null) => value ? new Date(value).toLocaleDateString('en-IN') : 'Not available'
+const date = (value?: string | null) => value ? formatDate(value) : 'Not available'
 const tone = (value: string) => value === 'APPROVED' || value === 'VERIFIED' ? 'success' : value === 'REJECTED' || value === 'SUSPENDED' || value === 'BLOCKED' ? 'danger' : 'warning'
 
 function VerificationSkeleton() {

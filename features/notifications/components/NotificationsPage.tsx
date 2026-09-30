@@ -8,8 +8,9 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 import { notificationService, type NotificationItem } from '@/features/notifications/services/notification-service'
 import { statusLabel } from '@/features/seller/types/seller.types'
 import { Skeleton, EmptyState, ErrorState } from '@/components/skeletons'
+import { formatDateTime } from '@/lib/datetime'
 
-const date = (value?: string) => value ? new Date(value).toLocaleString('en-IN') : 'Date unavailable'
+const date = (value?: string) => value ? formatDateTime(value) : 'Date unavailable'
 
 function NotificationListSkeleton({ count = 5 }: { count?: number }) {
   return (

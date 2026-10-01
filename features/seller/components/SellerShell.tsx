@@ -100,7 +100,11 @@ export function SellerShell({ children }: { children: ReactNode }) {
             >
               <item.icon />
               <span>{item.label}</span>
-              {item.href === '/notifications' && unreadCount !== undefined ? <em className="alert-count">{unreadCount}</em> : item.count && <em className="alert-count">{item.count}</em>}
+              {item.href === '/notifications' ? (
+                (unreadCount ?? 0) > 0 ? <em className="alert-count">{unreadCount}</em> : null
+              ) : (
+                item.count && <em className="alert-count">{item.count}</em>
+              )}
             </button>
           ))}
         </nav>
@@ -169,7 +173,7 @@ export function SellerShell({ children }: { children: ReactNode }) {
             </button>
             <button className="icon-button notification" onClick={() => navigate('/notifications')}>
               <Bell />
-              <i />
+              {(unreadCount ?? 0) > 0 && <i />}
             </button>
             <div className="topbar-user-menu-wrap" ref={topbarUserMenuRef}>
               <button

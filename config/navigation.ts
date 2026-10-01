@@ -16,7 +16,7 @@ export const workspaceNavigation: NavigationItem[] = [
 export const managementNavigation: NavigationItem[] = [
   { label: 'My Store', icon: Store, href: '/store' },
   { label: 'Verification', icon: ShieldCheck, href: '/verification' },
-  { label: 'Notifications', icon: Bell, href: '/notifications', count: '4' },
+  { label: 'Notifications', icon: Bell, href: '/notifications' },
   { label: 'Support', icon: LifeBuoy, href: '/support' },
   { label: 'Settings', icon: Settings, href: '/settings' },
 ]

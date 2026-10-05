@@ -1,9 +1,13 @@
 import { api } from '@/api'
-import type { SellerProfileData, UserProfile, VendorProfile } from '@/features/profile/types/profile.types'
+import type { SellerProfileData, UserProfile, VendorProfile, VendorPickupAddress } from '@/features/profile/types/profile.types'
 
 export const profileService = {
   async getCurrentUser() { return api.get<UserProfile>('/users/me') },
   async getCurrentVendor() { return api.get<VendorProfile>('/vendors/me') },
+  async getPickupAddress() { return api.get<VendorPickupAddress | null>('/vendors/pickup-address') },
+  async updatePickupAddress(payload: VendorPickupAddress) {
+    return api.put<VendorPickupAddress>('/vendors/pickup-address', payload)
+  },
   async getSellerProfile(): Promise<SellerProfileData> {
     const [user, vendor] = await Promise.all([this.getCurrentUser(), this.getCurrentVendor()])
     return { user, vendor }

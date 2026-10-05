@@ -15,6 +15,18 @@ export type UserProfile = {
   updatedAt?: string
 }
 
+export type VendorPickupAddress = {
+  pickupLocationName: string
+  contactPerson: string
+  phone: string
+  addressLine1: string
+  addressLine2?: string
+  city: string
+  state: string
+  pincode: string
+  country?: string
+}
+
 export type VendorProfile = {
   id: string
   businessName: string
@@ -25,6 +37,7 @@ export type VendorProfile = {
   phone?: string
   website?: string
   address?: string
+  pickupAddress?: VendorPickupAddress | null
   status: 'PENDING' | 'UNDER_REVIEW' | 'APPROVED' | 'REJECTED' | 'SUSPENDED' | 'BLOCKED'
   verificationStatus: 'UNVERIFIED' | 'PENDING' | 'VERIFIED' | 'REJECTED'
   rejectionReason?: string

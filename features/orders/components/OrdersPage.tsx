@@ -57,8 +57,8 @@ export function OrdersPage({ setView: _setView, setSelected: _setSelected }: { s
   const open = (id: string) => { router.push(`/orders/${id}`) }
   const counts = {
     awaiting: orders.filter((order) => order.status === 'PENDING_PAYMENT').length,
-    processing: orders.filter((order) => ['PROCESSING', 'CONFIRMED', 'READY_TO_SHIP', 'PACKED'].includes(order.status)).length,
-    transit: orders.filter((order) => ['SHIPPED', 'OUT_FOR_DELIVERY'].includes(order.status)).length,
+    processing: orders.filter((order) => ['PROCESSING', 'CONFIRMED', 'READY_TO_SHIP', 'PACKED', 'CREATED', 'LABEL_GENERATED', 'PICKUP_REQUESTED'].includes(order.status)).length,
+    transit: orders.filter((order) => ['SHIPPED', 'IN_TRANSIT', 'OUT_FOR_DELIVERY'].includes(order.status)).length,
     delivered: orders.filter((order) => order.status === 'DELIVERED').length,
   }
   const pageCount = Math.max(1, Math.ceil(total / limit))

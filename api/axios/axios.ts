@@ -127,6 +127,7 @@ client.interceptors.response.use(
 export const api = {
   get: <T>(path: string, config?: AxiosRequestConfig) => client.get<T>(path, config).then((response) => response.data),
   post: <T>(path: string, body?: unknown, config?: AxiosRequestConfig) => client.post<T>(path, body, config).then((response) => response.data),
+  put: <T>(path: string, body?: unknown, config?: AxiosRequestConfig) => client.put<T>(path, body, config).then((response) => response.data),
   patch: <T>(path: string, body: unknown, config?: AxiosRequestConfig) => client.patch<T>(path, body, config).then((response) => response.data),
   delete: <T>(path: string, config?: AxiosRequestConfig) => client.delete<T>(path, config).then((response) => response.data),
 }

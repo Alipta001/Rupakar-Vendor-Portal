@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { AlertTriangle, ArrowLeft, Check, Download, MapPin, Package, Printer, Send, ShieldCheck, Truck, X } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, Check, Download, FileText, MapPin, Package, Printer, Send, ShieldCheck, Truck, X } from 'lucide-react'
 
 import { useParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { orderService, type CancellationRequest, type VendorOrder } from '@/features/orders/services/order-service'
@@ -94,6 +95,21 @@ export function OrderDetailsPage({ setView: _setView }: { setView: (view: 'order
     }
   }, [orderId, fetchKey])
 
+  const [packageWeight, setPackageWeight] = useState<string>('0.5')
+  const [packageLength, setPackageLength] = useState<string>('15')
+  const [packageWidth, setPackageWidth] = useState<string>('10')
+  const [packageHeight, setPackageHeight] = useState<string>('5')
+
+  useEffect(() => {
+    if (order?.shipment?.packageInfo) {
+      const p = order.shipment.packageInfo
+      if (p.weight) setPackageWeight(String(p.weight))
+      if (p.length) setPackageLength(String(p.length))
+      if (p.width) setPackageWidth(String(p.width))
+      if (p.height) setPackageHeight(String(p.height))
+    }
+  }, [order])
+
   const address = useMemo(() => order?.parent?.shippingAddressSnapshot || {}, [order])
 
   const validAction = useMemo(() => {
@@ -102,13 +118,13 @@ export function OrderDetailsPage({ setView: _setView }: { setView: (view: 'order
       return { label: 'Start processing', action: 'process' as const }
     }
     if (order.status === 'PROCESSING') {
-      return { label: 'Pack', action: 'pack' as const }
+      return { label: 'Pack order', action: 'pack' as const }
     }
     if (order.status === 'PACKED') {
       return { label: 'Ready to Ship', action: 'readyToShip' as const }
     }
-    if (order.status === 'READY_TO_SHIP') {
-      return { label: 'Ship', action: 'ship' as const }
+    if (['READY_TO_SHIP', 'PICKUP_REQUESTED'].includes(order.status)) {
+      return { label: 'Handover / Ship', action: 'ship' as const }
     }
     return null
   }, [order])
@@ -120,13 +136,66 @@ export function OrderDetailsPage({ setView: _setView }: { setView: (view: 'order
     try {
       if (validAction.action === 'process') await orderService.process(order._id)
       else if (validAction.action === 'pack') await orderService.pack(order._id)
-      else if (validAction.action === 'readyToShip') await orderService.readyToShip(order._id)
+      else if (validAction.action === 'readyToShip') {
+        if (order.vendorPickupConfigured === false && !order.shipment?.pickupAddress?.city) {
+          setError('Please add your pickup / dispatch address before marking this order Ready to Ship.')
+          setSaving(false)
+          return
+        }
+        const w = parseFloat(packageWeight)
+        const l = parseFloat(packageLength)
+        const wi = parseFloat(packageWidth)
+        const h = parseFloat(packageHeight)
+        if (isNaN(w) || w <= 0 || w > 100) {
+          setError('Please enter a valid package weight between 0.01 kg and 100 kg')
+          setSaving(false)
+          return
+        }
+        if (isNaN(l) || l <= 0 || l > 300 || isNaN(wi) || wi <= 0 || wi > 300 || isNaN(h) || h <= 0 || h > 300) {
+          setError('Please enter valid package dimensions between 1 cm and 300 cm')
+          setSaving(false)
+          return
+        }
+        await orderService.readyToShip(order._id, { weight: w, length: l, width: wi, height: h })
+      }
       else if (validAction.action === 'ship') await orderService.ship(order._id)
       load()
     } catch (cause) {
       setError(getApiErrorMessage(cause, 'Unable to update order'))
     } finally {
       setSaving(false)
+    }
+  }
+
+  const downloadShippingLabel = async () => {
+    if (!order) return
+    setDocumentLoading('shippingLabel')
+    setError('')
+    try {
+      if (order.shipment?.labelUrl && /^https?:\/\//i.test(order.shipment.labelUrl)) {
+        const a = document.createElement('a')
+        a.href = order.shipment.labelUrl
+        a.target = '_blank'
+        a.rel = 'noopener noreferrer'
+        a.download = `shipping-label-${order.shipment?.trackingNumber || order._id.slice(-8)}.pdf`
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        return
+      }
+      const blob = await orderService.shippingLabel(order._id)
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `shipping-label-${order.shipment?.trackingNumber || order._id.slice(-8)}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (cause) {
+      setError(getApiErrorMessage(cause, 'Shipping label is not ready'))
+    } finally {
+      setDocumentLoading('')
     }
   }
 
@@ -226,15 +295,105 @@ export function OrderDetailsPage({ setView: _setView }: { setView: (view: 'order
           </div>
         </div>
 
+        {order.status === 'PACKED' && (
+          <div className="mt-6 rounded-xl border border-[#E6D8C4] bg-[#FCF8F3] p-5">
+            {order.vendorPickupConfigured === false && !order.shipment?.pickupAddress?.city && (
+              <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-4">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+                  <div className="flex-1">
+                    <h4 className="text-sm font-semibold text-amber-900">Pickup / Dispatch Address Required</h4>
+                    <p className="mt-1 text-xs text-amber-700 leading-relaxed">
+                      Please add your pickup / dispatch address before marking this order Ready to Ship. Carrier pickup, AWB generation, and official shipping labels require an active dispatch hub.
+                    </p>
+                    <Link
+                      href="/settings?tab=pickup"
+                      className="mt-2.5 inline-flex items-center gap-1 text-xs font-semibold text-[#8B5E34] hover:underline"
+                    >
+                      Configure Pickup Address in Settings &rarr;
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div className="flex items-center gap-2 mb-3">
+              <Package className="h-5 w-5 text-[#8B5E34]" />
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-[#1E1A17]">Package Details & Dimension Confirmation</h3>
+            </div>
+            <p className="text-xs text-[#5D4A3C] mb-4">
+              Confirm your package specifications before requesting carrier pickup. Rupakar will automatically select the best available delivery service and generate your AWB and shipping label.
+            </p>
+            <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
+              <div>
+                <label className="block text-[11px] font-medium uppercase tracking-wider text-[#7A655A] mb-1">Weight (kg)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0.01"
+                  max="100"
+                  value={packageWeight}
+                  onChange={(e) => setPackageWeight(e.target.value)}
+                  className="w-full rounded-lg border border-[#D4C4B0] bg-white px-3 py-2 text-sm text-[#1E1A17] focus:outline-none focus:ring-1 focus:ring-[#8B5E34]"
+                  placeholder="0.5"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium uppercase tracking-wider text-[#7A655A] mb-1">Length (cm)</label>
+                <input
+                  type="number"
+                  step="1"
+                  min="1"
+                  max="300"
+                  value={packageLength}
+                  onChange={(e) => setPackageLength(e.target.value)}
+                  className="w-full rounded-lg border border-[#D4C4B0] bg-white px-3 py-2 text-sm text-[#1E1A17] focus:outline-none focus:ring-1 focus:ring-[#8B5E34]"
+                  placeholder="15"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium uppercase tracking-wider text-[#7A655A] mb-1">Width (cm)</label>
+                <input
+                  type="number"
+                  step="1"
+                  min="1"
+                  max="300"
+                  value={packageWidth}
+                  onChange={(e) => setPackageWidth(e.target.value)}
+                  className="w-full rounded-lg border border-[#D4C4B0] bg-white px-3 py-2 text-sm text-[#1E1A17] focus:outline-none focus:ring-1 focus:ring-[#8B5E34]"
+                  placeholder="10"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium uppercase tracking-wider text-[#7A655A] mb-1">Height (cm)</label>
+                <input
+                  type="number"
+                  step="1"
+                  min="1"
+                  max="300"
+                  value={packageHeight}
+                  onChange={(e) => setPackageHeight(e.target.value)}
+                  className="w-full rounded-lg border border-[#D4C4B0] bg-white px-3 py-2 text-sm text-[#1E1A17] focus:outline-none focus:ring-1 focus:ring-[#8B5E34]"
+                  placeholder="5"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="mt-6 flex flex-wrap gap-2">
           {order.parent?.paymentStatus === 'PAID' && (
             <button className="secondary-button" disabled={Boolean(documentLoading)} onClick={() => download('invoice')}>
               <Download /> {documentLoading === 'invoice' ? 'Preparing…' : 'Download invoice'}
             </button>
           )}
-          {['PACKED', 'SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(order.status) && (
+          {['PACKED', 'READY_TO_SHIP', 'PICKUP_REQUESTED', 'SHIPPED', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(order.status) && (
             <button className="secondary-button" disabled={Boolean(documentLoading)} onClick={() => download('packingSlip')}>
               <Printer /> {documentLoading === 'packingSlip' ? 'Preparing…' : 'Download packing slip'}
+            </button>
+          )}
+          {['READY_TO_SHIP', 'PICKUP_REQUESTED', 'SHIPPED', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(order.status) && (
+            <button className="secondary-button" disabled={Boolean(documentLoading)} onClick={downloadShippingLabel}>
+              <FileText /> {documentLoading === 'shippingLabel' ? 'Preparing…' : 'Download shipping label'}
             </button>
           )}
           {validAction && (
@@ -243,11 +402,63 @@ export function OrderDetailsPage({ setView: _setView }: { setView: (view: 'order
             </button>
           )}
         </div>
+
         {order.shipment && (
-          <div className="mt-5 rounded-xl border border-[#E6D8C4] bg-[#FCF8F3] p-4 text-sm">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-[#7A655A]">Shipment tracking</p>
-            <p className="mt-2 font-semibold text-[#1E1A17]">AWB {order.shipment.trackingNumber || 'Pending'}</p>
-            {order.shipment.trackingUrl && <a className="mt-1 inline-block text-[#8B5E34] underline" href={order.shipment.trackingUrl} target="_blank" rel="noreferrer">Open tracking</a>}
+          <div className="mt-6 rounded-xl border border-[#E6D8C4] bg-[#FCF8F3] p-5 text-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-3 border-b border-[#E6D8C4]">
+              <div className="flex items-center gap-2">
+                <Truck className="h-5 w-5 text-[#8B5E34]" />
+                <span className="font-semibold text-[#1E1A17]">
+                  {order.shipment.carrier || (order.shipment.provider === 'shiprocket' ? 'Shiprocket Courier' : 'Rupakar Express Logistics')}
+                </span>
+                {order.shipment.provider && order.shipment.provider !== 'mock' && (
+                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-[#EDE3D4] text-[#5D4A3C]">
+                    {order.shipment.provider}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs uppercase font-medium tracking-wider text-[#7A655A]">Shipment Status:</span>
+                <StatusBadge tone={statusTone(order.shipment.status || 'PENDING')}>
+                  {order.shipment.status?.replaceAll('_', ' ') || 'PENDING'}
+                </StatusBadge>
+              </div>
+            </div>
+
+            <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.18em] text-[#7A655A]">AWB / Tracking Number</p>
+                <p className="mt-1 font-semibold text-[#1E1A17]">{order.shipment.trackingNumber || 'Pending Assignment'}</p>
+                {order.shipment.trackingUrl && (
+                  <a className="mt-1 inline-block text-xs text-[#8B5E34] underline" href={order.shipment.trackingUrl} target="_blank" rel="noreferrer">
+                    Track carrier package →
+                  </a>
+                )}
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.18em] text-[#7A655A]">Carrier Pickup Status</p>
+                <p className="mt-1 font-semibold text-[#1E1A17]">
+                  {order.shipment.pickupStatus ? `${order.shipment.pickupStatus} ${order.shipment.pickupScheduledAt ? `(${date(order.shipment.pickupScheduledAt)})` : ''}` : 'Requested'}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.18em] text-[#7A655A]">Package Dimensions & Weight</p>
+                <p className="mt-1 font-semibold text-[#1E1A17]">
+                  {order.shipment.packageInfo?.weight || packageWeight} kg · {order.shipment.packageInfo?.length || packageLength}×{order.shipment.packageInfo?.width || packageWidth}×{order.shipment.packageInfo?.height || packageHeight} cm
+                </p>
+              </div>
+              {order.shipment.estimatedDeliveryAt ? (
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-[#7A655A]">Estimated Delivery</p>
+                  <p className="mt-1 font-semibold text-[#1E1A17]">{date(order.shipment.estimatedDeliveryAt)}</p>
+                </div>
+              ) : order.shipment.pickupAddress?.city ? (
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-[#7A655A]">Pickup Hub</p>
+                  <p className="mt-1 font-semibold text-[#1E1A17]">{order.shipment.pickupAddress.pickupLocationName || order.shipment.pickupAddress.city}</p>
+                </div>
+              ) : null}
+            </div>
           </div>
         )}
       </section>
@@ -396,6 +607,49 @@ export function OrderDetailsPage({ setView: _setView }: { setView: (view: 'order
               )}
             </div>
           </section>
+
+          {(order.shipment?.pickupAddress && (order.shipment.pickupAddress.street || order.shipment.pickupAddress.city)) ? (
+            <section className="panel detail-card">
+              <div className="flex items-center gap-2 mb-4">
+                <Truck className="h-5 w-5 text-[#8B5E34]" />
+                <h3 className="text-lg font-semibold text-[#1E1A17]">Pickup / Dispatch Location</h3>
+              </div>
+              <div className="space-y-2 text-sm text-[#4E3D33]">
+                {order.shipment.pickupAddress.pickupLocationName && (
+                  <p className="font-semibold text-[#1E1A17]">{order.shipment.pickupAddress.pickupLocationName}</p>
+                )}
+                <p className="whitespace-pre-line leading-6 text-[#3A2E29]">
+                  {[
+                    order.shipment.pickupAddress.street,
+                    [order.shipment.pickupAddress.city, order.shipment.pickupAddress.state, order.shipment.pickupAddress.postalCode].filter(Boolean).join(', '),
+                    order.shipment.pickupAddress.country || 'India',
+                  ].filter(Boolean).join('\n')}
+                </p>
+              </div>
+            </section>
+          ) : order.vendorPickupAddress?.addressLine1 ? (
+            <section className="panel detail-card">
+              <div className="flex items-center gap-2 mb-4">
+                <Truck className="h-5 w-5 text-[#8B5E34]" />
+                <h3 className="text-lg font-semibold text-[#1E1A17]">Pickup / Dispatch Location</h3>
+              </div>
+              <div className="space-y-2 text-sm text-[#4E3D33]">
+                {order.vendorPickupAddress.pickupLocationName && (
+                  <p className="font-semibold text-[#1E1A17]">{order.vendorPickupAddress.pickupLocationName}</p>
+                )}
+                <p className="whitespace-pre-line leading-6 text-[#3A2E29]">
+                  {[
+                    [order.vendorPickupAddress.addressLine1, order.vendorPickupAddress.addressLine2].filter(Boolean).join(', '),
+                    [order.vendorPickupAddress.city, order.vendorPickupAddress.state, order.vendorPickupAddress.pincode].filter(Boolean).join(', '),
+                    order.vendorPickupAddress.country || 'India',
+                  ].filter(Boolean).join('\n')}
+                </p>
+                <p className="text-xs text-[#7A655A] italic">
+                  Configured store pickup hub — will be snapshotted upon Ready-to-Ship.
+                </p>
+              </div>
+            </section>
+          ) : null}
 
           <section className="panel detail-card">
             <div className="flex items-center gap-2 mb-4">

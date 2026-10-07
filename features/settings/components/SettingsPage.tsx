@@ -5,6 +5,15 @@ import { LockKeyhole, MapPin, Save, ShieldCheck, Truck, Edit2, Plus } from 'luci
 import { PageHeader } from '@/components/layout/PageHeader'
 import { profileService } from '@/features/profile/services/profile-service'
 import type { SellerProfileData, VendorPickupAddress } from '@/features/profile/types/profile.types'
+import { getApiErrorMessage } from '@/lib/api/errors'
+
+export const normalizeIndianPhone = (val: string): string => {
+  const digits = (val || '').replace(/\D/g, '')
+  if (digits.length === 12 && digits.startsWith('91')) return digits.slice(2)
+  if (digits.length === 11 && digits.startsWith('0')) return digits.slice(1)
+  if (digits.length > 10) return digits.slice(-10)
+  return digits
+}
 
 const emptyAddress: VendorPickupAddress = {
   pickupLocationName: '',
@@ -58,24 +67,28 @@ export function SettingsPage() {
         })
         const existingAddr = addr || data.vendor.pickupAddress || null
         if (existingAddr && existingAddr.pincode) {
-          setPickupAddress(existingAddr)
-          setAddressForm(existingAddr)
+          const normalizedExisting = {
+            ...existingAddr,
+            phone: normalizeIndianPhone(existingAddr.phone),
+          }
+          setPickupAddress(normalizedExisting)
+          setAddressForm(normalizedExisting)
           setIsEditingAddress(false)
         } else {
           setPickupAddress(null)
-          // Prefill defaults from vendor profile
+          // Prefill defaults from vendor profile with normalized 10-digit phone
           setAddressForm({
             ...emptyAddress,
             pickupLocationName: data.vendor.businessName ? `${data.vendor.businessName} Warehouse` : 'Primary Hub',
             contactPerson: data.user.name || '',
-            phone: data.user.phone || data.vendor.phone || '',
+            phone: normalizeIndianPhone(data.user.phone || data.vendor.phone || ''),
             addressLine1: data.vendor.address || '',
           })
           setIsEditingAddress(false)
         }
       })
       .catch((error) =>
-        setNotice({ type: 'error', text: error instanceof Error ? error.message : 'Unable to load settings' })
+        setNotice({ type: 'error', text: getApiErrorMessage(error, 'Unable to load settings') })
       )
       .finally(() => setLoading(false))
   }, [])
@@ -92,7 +105,7 @@ export function SettingsPage() {
       setProfile({ user, vendor })
       setNotice({ type: 'success', text: 'Account and store settings saved.' })
     } catch (error) {
-      setNotice({ type: 'error', text: error instanceof Error ? error.message : 'Unable to save settings' })
+      setNotice({ type: 'error', text: getApiErrorMessage(error, 'Unable to save settings') })
     } finally {
       setSaving(false)
     }
@@ -100,32 +113,36 @@ export function SettingsPage() {
 
   const validateAddress = (): boolean => {
     const errors: Record<string, string> = {}
-    if (!addressForm.pickupLocationName.trim()) {
-      errors.pickupLocationName = 'Pickup location name is required (e.g. Primary Hub)'
+    if (!addressForm.pickupLocationName.trim() || addressForm.pickupLocationName.trim().length < 2) {
+      errors.pickupLocationName = 'Pickup location name must be at least 2 characters (e.g. Primary Hub)'
     }
-    if (!addressForm.contactPerson.trim()) {
-      errors.contactPerson = 'Contact person name is required'
+    if (!addressForm.contactPerson.trim() || addressForm.contactPerson.trim().length < 2) {
+      errors.contactPerson = 'Contact person name must be at least 2 characters'
     }
-    const cleanPhone = addressForm.phone.trim().replace(/\D/g, '')
-    if (!cleanPhone || cleanPhone.length !== 10 || !/^[6-9]/.test(cleanPhone)) {
-      errors.phone = 'Please enter a valid 10-digit Indian mobile number'
+    const cleanPhone = normalizeIndianPhone(addressForm.phone.trim())
+    if (!cleanPhone || cleanPhone.length !== 10 || !/^[6-9]\d{9}$/.test(cleanPhone)) {
+      errors.phone = 'Please enter a valid 10-digit Indian mobile number (e.g. 9876543210)'
     }
     if (!addressForm.addressLine1.trim() || addressForm.addressLine1.trim().length < 3) {
       errors.addressLine1 = 'Address line 1 is required (min 3 characters)'
     }
-    if (!addressForm.city.trim()) {
-      errors.city = 'City is required'
+    if (!addressForm.city.trim() || addressForm.city.trim().length < 2) {
+      errors.city = 'City is required (at least 2 characters)'
     }
-    if (!addressForm.state.trim()) {
-      errors.state = 'State is required'
+    if (!addressForm.state.trim() || addressForm.state.trim().length < 2) {
+      errors.state = 'State is required (at least 2 characters)'
     }
     const cleanPin = addressForm.pincode.trim()
     if (!cleanPin || cleanPin.length !== 6 || !/^\d{6}$/.test(cleanPin)) {
-      errors.pincode = 'Please enter a valid 6-digit Indian pincode'
+      errors.pincode = 'Please enter a valid 6-digit Indian postal code'
     }
 
     setAddressErrors(errors)
-    return Object.keys(errors).length === 0
+    const isValid = Object.keys(errors).length === 0
+    if (!isValid) {
+      setNotice({ type: 'error', text: 'Please correct the highlighted fields before saving.' })
+    }
+    return isValid
   }
 
   const savePickupAddress = async (event: React.FormEvent) => {
@@ -138,7 +155,7 @@ export function SettingsPage() {
       const payload: VendorPickupAddress = {
         pickupLocationName: addressForm.pickupLocationName.trim(),
         contactPerson: addressForm.contactPerson.trim(),
-        phone: addressForm.phone.trim().replace(/\D/g, '').slice(-10),
+        phone: normalizeIndianPhone(addressForm.phone.trim()),
         addressLine1: addressForm.addressLine1.trim(),
         addressLine2: addressForm.addressLine2?.trim() || '',
         city: addressForm.city.trim(),
@@ -148,12 +165,17 @@ export function SettingsPage() {
       }
 
       const updated = await profileService.updatePickupAddress(payload)
-      setPickupAddress(updated)
-      setAddressForm(updated)
+      const normalizedUpdated = {
+        ...updated,
+        phone: normalizeIndianPhone(updated.phone),
+      }
+      setPickupAddress(normalizedUpdated)
+      setAddressForm(normalizedUpdated)
+      setAddressErrors({})
       setIsEditingAddress(false)
       setNotice({ type: 'success', text: 'Pickup / dispatch address saved successfully. Carriers will use this location for pickups.' })
     } catch (error) {
-      setNotice({ type: 'error', text: error instanceof Error ? error.message : 'Unable to save pickup address' })
+      setNotice({ type: 'error', text: getApiErrorMessage(error, 'Unable to save pickup address') })
     } finally {
       setSavingAddress(false)
     }
@@ -176,7 +198,7 @@ export function SettingsPage() {
       setPassword({ currentPassword: '', newPassword: '', confirmPassword: '' })
       setNotice({ type: 'success', text: 'Password changed. Other active sessions were signed out.' })
     } catch (error) {
-      setNotice({ type: 'error', text: error instanceof Error ? error.message : 'Unable to change password' })
+      setNotice({ type: 'error', text: getApiErrorMessage(error, 'Unable to change password') })
     } finally {
       setSaving(false)
     }
@@ -315,6 +337,12 @@ export function SettingsPage() {
               <MapPin className="heading-icon text-[#8B5E34]" />
             </div>
 
+            {notice && (
+              <div className={`auth-notice ${notice.type} my-4`} role={notice.type === 'error' ? 'alert' : 'status'}>
+                {notice.text}
+              </div>
+            )}
+
             {/* Read-Only View Mode */}
             {!isEditingAddress && pickupAddress && (
               <div className="mt-5 space-y-4">
@@ -361,6 +389,7 @@ export function SettingsPage() {
                     onClick={() => {
                       setAddressForm(pickupAddress)
                       setAddressErrors({})
+                      setNotice(undefined)
                       setIsEditingAddress(true)
                     }}
                   >
@@ -383,6 +412,7 @@ export function SettingsPage() {
                   className="primary-button inline-flex items-center gap-2 mx-auto"
                   onClick={() => {
                     setAddressErrors({})
+                    setNotice(undefined)
                     setIsEditingAddress(true)
                   }}
                 >
@@ -401,7 +431,16 @@ export function SettingsPage() {
                       required
                       placeholder="e.g. Kolkata Artisan Hub or Primary"
                       value={addressForm.pickupLocationName}
-                      onChange={(e) => setAddressForm({ ...addressForm, pickupLocationName: e.target.value })}
+                      onChange={(e) => {
+                        setAddressForm({ ...addressForm, pickupLocationName: e.target.value })
+                        if (addressErrors.pickupLocationName) {
+                          setAddressErrors((prev) => {
+                            const next = { ...prev }
+                            delete next.pickupLocationName
+                            return next
+                          })
+                        }
+                      }}
                     />
                     <small className="text-[11px] text-[#7A655A] mt-0.5">
                       Nickname used by delivery partners (e.g. Shiprocket) to identify this pickup facility.
@@ -417,7 +456,16 @@ export function SettingsPage() {
                       required
                       placeholder="Contact person for courier driver"
                       value={addressForm.contactPerson}
-                      onChange={(e) => setAddressForm({ ...addressForm, contactPerson: e.target.value })}
+                      onChange={(e) => {
+                        setAddressForm({ ...addressForm, contactPerson: e.target.value })
+                        if (addressErrors.contactPerson) {
+                          setAddressErrors((prev) => {
+                            const next = { ...prev }
+                            delete next.contactPerson
+                            return next
+                          })
+                        }
+                      }}
                     />
                     {addressErrors.contactPerson && (
                       <span className="text-xs text-red-600 mt-1">{addressErrors.contactPerson}</span>
@@ -429,10 +477,22 @@ export function SettingsPage() {
                     <input
                       required
                       type="tel"
-                      maxLength={10}
+                      maxLength={15}
                       placeholder="10-digit Indian mobile number"
                       value={addressForm.phone}
-                      onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value })}
+                      onChange={(e) => {
+                        const raw = e.target.value
+                        const digits = raw.replace(/\D/g, '')
+                        const clean = digits.length > 10 ? normalizeIndianPhone(digits).slice(0, 10) : digits
+                        setAddressForm({ ...addressForm, phone: clean })
+                        if (addressErrors.phone) {
+                          setAddressErrors((prev) => {
+                            const next = { ...prev }
+                            delete next.phone
+                            return next
+                          })
+                        }
+                      }}
                     />
                     {addressErrors.phone && (
                       <span className="text-xs text-red-600 mt-1">{addressErrors.phone}</span>
@@ -445,7 +505,16 @@ export function SettingsPage() {
                       required
                       placeholder="e.g. 12 Craft Guild Lane, Studio 4B"
                       value={addressForm.addressLine1}
-                      onChange={(e) => setAddressForm({ ...addressForm, addressLine1: e.target.value })}
+                      onChange={(e) => {
+                        setAddressForm({ ...addressForm, addressLine1: e.target.value })
+                        if (addressErrors.addressLine1) {
+                          setAddressErrors((prev) => {
+                            const next = { ...prev }
+                            delete next.addressLine1
+                            return next
+                          })
+                        }
+                      }}
                     />
                     {addressErrors.addressLine1 && (
                       <span className="text-xs text-red-600 mt-1">{addressErrors.addressLine1}</span>
@@ -467,7 +536,16 @@ export function SettingsPage() {
                       required
                       placeholder="City (e.g. Kolkata)"
                       value={addressForm.city}
-                      onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
+                      onChange={(e) => {
+                        setAddressForm({ ...addressForm, city: e.target.value })
+                        if (addressErrors.city) {
+                          setAddressErrors((prev) => {
+                            const next = { ...prev }
+                            delete next.city
+                            return next
+                          })
+                        }
+                      }}
                     />
                     {addressErrors.city && (
                       <span className="text-xs text-red-600 mt-1">{addressErrors.city}</span>
@@ -480,7 +558,16 @@ export function SettingsPage() {
                       required
                       placeholder="State (e.g. West Bengal)"
                       value={addressForm.state}
-                      onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })}
+                      onChange={(e) => {
+                        setAddressForm({ ...addressForm, state: e.target.value })
+                        if (addressErrors.state) {
+                          setAddressErrors((prev) => {
+                            const next = { ...prev }
+                            delete next.state
+                            return next
+                          })
+                        }
+                      }}
                     />
                     {addressErrors.state && (
                       <span className="text-xs text-red-600 mt-1">{addressErrors.state}</span>
@@ -494,7 +581,17 @@ export function SettingsPage() {
                       maxLength={6}
                       placeholder="e.g. 700001"
                       value={addressForm.pincode}
-                      onChange={(e) => setAddressForm({ ...addressForm, pincode: e.target.value })}
+                      onChange={(e) => {
+                        const clean = e.target.value.replace(/\D/g, '').slice(0, 6)
+                        setAddressForm({ ...addressForm, pincode: clean })
+                        if (addressErrors.pincode) {
+                          setAddressErrors((prev) => {
+                            const next = { ...prev }
+                            delete next.pincode
+                            return next
+                          })
+                        }
+                      }}
                     />
                     {addressErrors.pincode && (
                       <span className="text-xs text-red-600 mt-1">{addressErrors.pincode}</span>
@@ -510,24 +607,29 @@ export function SettingsPage() {
                   </label>
                 </div>
 
+                {addressErrors && Object.keys(addressErrors).length > 0 && (
+                  <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700 mt-3" role="alert">
+                    Please fix the highlighted fields above before saving.
+                  </div>
+                )}
+
                 <div className="flex items-center gap-3 pt-4 border-t border-[#E6D8C4] mt-4">
-                  <button className="primary-button" type="submit" disabled={savingAddress}>
-                    <Save className="h-4 w-4" /> {savingAddress ? 'Saving address…' : 'Save pickup address'}
+                  <button className="primary-button" type="submit" disabled={savingAddress} aria-label="Save Address">
+                    <Save className="h-4 w-4" /> {savingAddress ? 'Saving address…' : 'Save Address'}
                   </button>
-                  {pickupAddress && (
-                    <button
-                      type="button"
-                      className="secondary-button"
-                      disabled={savingAddress}
-                      onClick={() => {
-                        setAddressForm(pickupAddress)
-                        setAddressErrors({})
-                        setIsEditingAddress(false)
-                      }}
-                    >
-                      Cancel
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    disabled={savingAddress}
+                    onClick={() => {
+                      setAddressForm(pickupAddress || emptyAddress)
+                      setAddressErrors({})
+                      setNotice(undefined)
+                      setIsEditingAddress(false)
+                    }}
+                  >
+                    Cancel
+                  </button>
                 </div>
               </form>
             )}

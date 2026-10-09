@@ -473,8 +473,8 @@ export function OrderDetailsPage({ setView: _setView }: { setView: (view: 'order
                   <span className={order.shipment.carrier ? 'text-[#1E1A17] font-medium' : 'text-stone-400'}>Courier Selected</span>
                 </div>
                 <div className="flex items-center gap-1.5 p-2 rounded bg-white border border-[#E6D8C4]">
-                  <CheckCircle className={`h-4 w-4 shrink-0 ${order.shipment.trackingNumber && !order.shipment.trackingNumber.startsWith('TRK-') ? 'text-emerald-600' : 'text-stone-300'}`} />
-                  <span className={order.shipment.trackingNumber && !order.shipment.trackingNumber.startsWith('TRK-') ? 'text-[#1E1A17] font-medium' : 'text-stone-400'}>AWB Assigned</span>
+                  <CheckCircle className={`h-4 w-4 shrink-0 ${order.shipment.trackingNumber && !order.shipment.trackingNumber.startsWith('TRK-') && !order.shipment.trackingNumber.startsWith('SR') ? 'text-emerald-600' : 'text-stone-300'}`} />
+                  <span className={order.shipment.trackingNumber && !order.shipment.trackingNumber.startsWith('TRK-') && !order.shipment.trackingNumber.startsWith('SR') ? 'text-[#1E1A17] font-medium' : 'text-stone-400'}>AWB Assigned</span>
                 </div>
                 <div className="flex items-center gap-1.5 p-2 rounded bg-white border border-[#E6D8C4]">
                   <CheckCircle className={`h-4 w-4 shrink-0 ${order.shipment.labelUrl ? 'text-emerald-600' : 'text-stone-300'}`} />
@@ -487,11 +487,14 @@ export function OrderDetailsPage({ setView: _setView }: { setView: (view: 'order
               </div>
             </div>
 
-            {(order.shipment.metadata?.labelError || order.shipment.metadata?.pickupError || order.shipment.pickupStatus === 'FAILED' || (!order.shipment.trackingNumber || order.shipment.trackingNumber.startsWith('TRK-'))) && (
+            {(order.shipment.metadata?.awbError || order.shipment.metadata?.labelError || order.shipment.metadata?.pickupError || order.shipment.pickupStatus === 'FAILED' || (!order.shipment.trackingNumber || order.shipment.trackingNumber.startsWith('TRK-') || order.shipment.trackingNumber.startsWith('SR'))) && (
               <div className="mt-3 p-3 rounded-lg border border-amber-300 bg-amber-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="text-xs text-amber-900">
                   <span className="font-semibold">Shipment requires retry:</span>{' '}
-                  {order.shipment.metadata?.pickupError || order.shipment.metadata?.labelError || 'Incomplete fulfillment stage'}
+                  {(() => {
+                    const rawError = order.shipment.metadata?.awbError || order.shipment.metadata?.pickupError || order.shipment.metadata?.labelError || 'Incomplete fulfillment stage';
+                    return rawError;
+                  })()}
                 </div>
                 <button
                   type="button"

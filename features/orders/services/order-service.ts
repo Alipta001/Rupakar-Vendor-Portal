@@ -71,6 +71,7 @@ export type VendorOrder = {
       name?: string
       phone?: string
     } | null
+    metadata?: Record<string, any> | null
   } | null
   parent?: VendorOrderParent | null
   vendorPickupConfigured?: boolean
@@ -129,6 +130,7 @@ export const orderService = {
   process: (id: string) => api.post<VendorOrderActionResult>('/vendors/orders/' + id + '/process', {}),
   readyToShip: (id: string, packageInfo?: { weight?: number; length?: number; width?: number; height?: number; unit?: string; dimensionUnit?: string }) =>
     api.post<VendorOrderActionResult>('/vendors/orders/' + id + '/ready-to-ship', packageInfo || {}),
+  retryShipment: (id: string) => api.post<VendorOrderActionResult>('/vendors/orders/' + id + '/retry-shipment', {}),
   ship: (id: string) => api.post<VendorOrderActionResult>('/vendors/orders/' + id + '/ship', {}),
   shippingLabel: (id: string) => api.get<Blob>('/vendors/orders/' + id + '/shipping-label', { responseType: 'blob' }),
   invoice: (id: string) => api.get<DocumentDownload>('/vendors/orders/' + id + '/invoice'),

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { AlertTriangle, ArrowLeft, Check, Download, FileText, MapPin, Package, Printer, Send, ShieldCheck, Truck, X } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, Check, CheckCircle, Download, FileText, MapPin, Package, Printer, RefreshCw, Send, ShieldCheck, Truck, X } from 'lucide-react'
 
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -459,6 +459,61 @@ export function OrderDetailsPage({ setView: _setView }: { setView: (view: 'order
                 </div>
               ) : null}
             </div>
+
+            {/* Automatic Fulfillment Stages */}
+            <div className="mt-4 pt-3 border-t border-[#E6D8C4]">
+              <p className="text-[10px] uppercase font-bold tracking-[0.16em] text-[#7A655A] mb-2">Shipment Fulfillment Stages</p>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
+                <div className="flex items-center gap-1.5 p-2 rounded bg-white border border-[#E6D8C4]">
+                  <CheckCircle className={`h-4 w-4 shrink-0 ${order.shipment.providerShipmentId || order.shipment.metadata?.shiprocketOrderId ? 'text-emerald-600' : 'text-stone-300'}`} />
+                  <span className={order.shipment.providerShipmentId ? 'text-[#1E1A17] font-medium' : 'text-stone-400'}>Order Created</span>
+                </div>
+                <div className="flex items-center gap-1.5 p-2 rounded bg-white border border-[#E6D8C4]">
+                  <CheckCircle className={`h-4 w-4 shrink-0 ${order.shipment.carrier && order.shipment.carrier !== 'mock-carrier' ? 'text-emerald-600' : 'text-stone-300'}`} />
+                  <span className={order.shipment.carrier ? 'text-[#1E1A17] font-medium' : 'text-stone-400'}>Courier Selected</span>
+                </div>
+                <div className="flex items-center gap-1.5 p-2 rounded bg-white border border-[#E6D8C4]">
+                  <CheckCircle className={`h-4 w-4 shrink-0 ${order.shipment.trackingNumber && !order.shipment.trackingNumber.startsWith('TRK-') ? 'text-emerald-600' : 'text-stone-300'}`} />
+                  <span className={order.shipment.trackingNumber && !order.shipment.trackingNumber.startsWith('TRK-') ? 'text-[#1E1A17] font-medium' : 'text-stone-400'}>AWB Assigned</span>
+                </div>
+                <div className="flex items-center gap-1.5 p-2 rounded bg-white border border-[#E6D8C4]">
+                  <CheckCircle className={`h-4 w-4 shrink-0 ${order.shipment.labelUrl ? 'text-emerald-600' : 'text-stone-300'}`} />
+                  <span className={order.shipment.labelUrl ? 'text-[#1E1A17] font-medium' : 'text-stone-400'}>Label Generated</span>
+                </div>
+                <div className="flex items-center gap-1.5 p-2 rounded bg-white border border-[#E6D8C4]">
+                  <CheckCircle className={`h-4 w-4 shrink-0 ${order.shipment.pickupStatus === 'SCHEDULED' || order.shipment.pickupStatus === 'REQUESTED' || order.shipment.pickupStatus === 'PICKED_UP' ? 'text-emerald-600' : 'text-stone-300'}`} />
+                  <span className={order.shipment.pickupStatus === 'SCHEDULED' || order.shipment.pickupStatus === 'REQUESTED' ? 'text-[#1E1A17] font-medium' : 'text-stone-400'}>Pickup Requested</span>
+                </div>
+              </div>
+            </div>
+
+            {(order.shipment.metadata?.labelError || order.shipment.metadata?.pickupError || order.shipment.pickupStatus === 'FAILED' || (!order.shipment.trackingNumber || order.shipment.trackingNumber.startsWith('TRK-'))) && (
+              <div className="mt-3 p-3 rounded-lg border border-amber-300 bg-amber-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="text-xs text-amber-900">
+                  <span className="font-semibold">Shipment requires retry:</span>{' '}
+                  {order.shipment.metadata?.pickupError || order.shipment.metadata?.labelError || 'Incomplete fulfillment stage'}
+                </div>
+                <button
+                  type="button"
+                  className="secondary-button text-xs py-1 px-3 self-start sm:self-auto"
+                  disabled={saving}
+                  onClick={async () => {
+                    setSaving(true)
+                    setError('')
+                    try {
+                      await orderService.retryShipment(order._id)
+                      load()
+                    } catch (err) {
+                      setError(getApiErrorMessage(err, 'Failed to retry shipment fulfillment'))
+                    } finally {
+                      setSaving(false)
+                    }
+                  }}
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 ${saving ? 'animate-spin' : ''}`} /> Retry Fulfillment
+                </button>
+              </div>
+            )}
           </div>
         )}
       </section>

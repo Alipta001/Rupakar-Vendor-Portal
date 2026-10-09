@@ -25,6 +25,11 @@ export type VendorPickupAddress = {
   state: string
   pincode: string
   country?: string
+  shiprocketPickupId?: string | null
+  registrationStatus?: 'PENDING' | 'REGISTERED' | 'FAILED'
+  adminStatus?: 'PENDING' | 'APPROVED' | 'DEACTIVATED' | 'ARCHIVED'
+  registeredAt?: string | null
+  registrationError?: string | null
 }
 
 export type VendorProfile = {

@@ -27,6 +27,51 @@ const emptyAddress: VendorPickupAddress = {
   country: 'India',
 }
 
+function getPickupStatusInfo(addr: VendorPickupAddress) {
+  if (addr.registrationStatus === 'FAILED') {
+    return {
+      label: 'Registration Failed',
+      badgeClass: 'bg-red-100 text-red-800 border-red-300',
+      bannerClass: 'bg-red-50 text-red-800 border-red-200',
+      description: addr.registrationError
+        ? `Shiprocket registration issue: ${addr.registrationError}. Please update address and try again.`
+        : 'Logistics provider registration failed. Please check contact details and save again.',
+    }
+  }
+  const effectiveAdminStatus = addr.adminStatus || (addr.registrationStatus === 'REGISTERED' ? 'APPROVED' : 'PENDING')
+  switch (effectiveAdminStatus) {
+    case 'APPROVED':
+      return {
+        label: 'Approved',
+        badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+        bannerClass: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+        description: 'Approved by Admin. Ready for new Shiprocket shipments and dispatch.',
+      }
+    case 'DEACTIVATED':
+      return {
+        label: 'Deactivated',
+        badgeClass: 'bg-rose-100 text-rose-800 border-rose-300',
+        bannerClass: 'bg-rose-50 text-rose-800 border-rose-200',
+        description: 'This pickup location has been temporarily deactivated by Admin. It cannot be used for new shipments.',
+      }
+    case 'ARCHIVED':
+      return {
+        label: 'Archived',
+        badgeClass: 'bg-gray-100 text-gray-700 border-gray-300',
+        bannerClass: 'bg-gray-50 text-gray-700 border-gray-200',
+        description: 'This pickup location has been permanently archived. Update your address to submit a new location for approval.',
+      }
+    case 'PENDING':
+    default:
+      return {
+        label: 'Pending Approval',
+        badgeClass: 'bg-amber-100 text-amber-800 border-amber-300',
+        bannerClass: 'bg-amber-50 text-amber-800 border-amber-200',
+        description: 'Awaiting Admin approval. Once approved by Admin, you can use it to mark orders Ready to Ship.',
+      }
+  }
+}
+
 export function SettingsPage() {
   const [activeTab, setActiveTab] = useState<'account' | 'pickup' | 'security'>('account')
   const [profile, setProfile] = useState<SellerProfileData>()
@@ -38,6 +83,7 @@ export function SettingsPage() {
   const [addressForm, setAddressForm] = useState<VendorPickupAddress>(emptyAddress)
   const [isEditingAddress, setIsEditingAddress] = useState(false)
   const [addressErrors, setAddressErrors] = useState<Record<string, string>>({})
+  const statusInfo = pickupAddress ? getPickupStatusInfo(pickupAddress) : null
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -173,7 +219,7 @@ export function SettingsPage() {
       setAddressForm(normalizedUpdated)
       setAddressErrors({})
       setIsEditingAddress(false)
-      setNotice({ type: 'success', text: 'Pickup / dispatch address saved successfully. Carriers will use this location for pickups.' })
+      setNotice({ type: 'success', text: 'Pickup / dispatch address saved successfully. It has been registered with logistics and is awaiting Admin approval before it can be used for new shipments.' })
     } catch (error) {
       setNotice({ type: 'error', text: getApiErrorMessage(error, 'Unable to save pickup address') })
     } finally {
@@ -344,7 +390,7 @@ export function SettingsPage() {
             )}
 
             {/* Read-Only View Mode */}
-            {!isEditingAddress && pickupAddress && (
+            {!isEditingAddress && pickupAddress && statusInfo && (
               <div className="mt-5 space-y-4">
                 <div className="rounded-xl border border-[#E6D8C4] bg-[#FCF8F3] p-5">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-3 border-b border-[#E6D8C4] gap-2">
@@ -354,9 +400,20 @@ export function SettingsPage() {
                         {pickupAddress.pickupLocationName}
                       </span>
                     </div>
-                    <span className="text-[11px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-[#EADECC] text-[#5D4A3C]">
-                      Active Dispatch Hub
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[11px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full border ${statusInfo.badgeClass}`}>
+                        {statusInfo.label}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className={`mt-3 p-3 rounded-lg border text-xs leading-relaxed ${statusInfo.bannerClass}`}>
+                    <p className="font-medium">{statusInfo.description}</p>
+                    {pickupAddress.shiprocketPickupId && (
+                      <p className="mt-1 text-[11px] opacity-80">
+                        Shiprocket Pickup ID: <span className="font-mono font-medium">{pickupAddress.shiprocketPickupId}</span>
+                      </p>
+                    )}
                   </div>
 
                   <div className="mt-4 grid gap-3 sm:grid-cols-2 text-sm">

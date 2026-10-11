@@ -280,6 +280,15 @@ export function ReturnsPage() {
                               Review
                             </button>
                           )}
+                          {ret.status === 'UNDER_REVIEW' && (
+                            <button
+                              type="button"
+                              onClick={() => openReturn(ret._id)}
+                              className="rounded-md bg-emerald-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-emerald-700"
+                            >
+                              Approve
+                            </button>
+                          )}
                           {ret.status === 'APPROVED' && (
                             <button
                               type="button"

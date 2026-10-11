@@ -30,6 +30,9 @@ export const returnService = {
   review: (id: string, notes?: string): Promise<SellerReturn> =>
     api.post<SellerReturn>(`${endpoints.vendors.returns}/${id}/review`, { notes }),
 
+  approve: (id: string, notes?: string): Promise<SellerReturn> =>
+    api.post<SellerReturn>(`${endpoints.vendors.returns}/${id}/approve`, { notes }),
+
   markReceived: (id: string, notes?: string): Promise<SellerReturn> =>
     api.post<SellerReturn>(`${endpoints.vendors.returns}/${id}/receive`, { notes }),
 

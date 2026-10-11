@@ -136,6 +136,7 @@ export interface SellerReturn {
   reviewedAt?: string | null
   reviewedBy?: string | null
   approvedAt?: string | null
+  approvedBy?: string | null
   receivedAt?: string | null
   receivedBy?: string | null
   completedAt?: string | null

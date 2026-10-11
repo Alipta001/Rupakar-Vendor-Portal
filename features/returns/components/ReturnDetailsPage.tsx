@@ -75,6 +75,10 @@ export function ReturnDetailsPage({ returnId: propReturnId }: { returnId?: strin
   const [showReviewModal, setShowReviewModal] = useState(false)
   const [reviewNotes, setReviewNotes] = useState('')
 
+  // Approve modal state
+  const [showApproveModal, setShowApproveModal] = useState(false)
+  const [approveNotes, setApproveNotes] = useState('')
+
   // Receive modal state
   const [showReceiveModal, setShowReceiveModal] = useState(false)
   const [receiveNotes, setReceiveNotes] = useState('')
@@ -146,6 +150,21 @@ export function ReturnDetailsPage({ returnId: propReturnId }: { returnId?: strin
       setActionSuccess('Return request has been acknowledged and marked Under Review.')
     } catch (err) {
       setError(getApiErrorMessage(err, 'Failed to review return'))
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleApprove = async () => {
+    try {
+      setActionLoading(true)
+      setActionSuccess('')
+      const updated = await returnService.approve(returnId, approveNotes.trim() || undefined)
+      setReturnDoc(updated)
+      setShowApproveModal(false)
+      setActionSuccess('Return request has been approved.')
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Failed to approve return'))
     } finally {
       setActionLoading(false)
     }
@@ -333,6 +352,19 @@ export function ReturnDetailsPage({ returnId: propReturnId }: { returnId?: strin
               className="rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-amber-700"
             >
               Review / Acknowledge
+            </button>
+          )}
+
+          {returnDoc.status === 'UNDER_REVIEW' && (
+            <button
+              type="button"
+              onClick={() => {
+                setApproveNotes('')
+                setShowApproveModal(true)
+              }}
+              className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 flex items-center gap-1.5"
+            >
+              <CheckCircle2 className="h-4 w-4" /> Approve Return
             </button>
           )}
 
@@ -816,6 +848,50 @@ export function ReturnDetailsPage({ returnId: propReturnId }: { returnId?: strin
                 className="rounded-md bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700 disabled:opacity-50"
               >
                 {actionLoading ? 'Saving...' : 'Confirm Review'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Approve Return Modal */}
+      {showApproveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-gray-900">
+            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+              Approve Return Request
+            </h3>
+            <p className="mt-1 text-xs text-gray-500">
+              Confirm approval of this return request. After approval, the return moves to Approved status for reverse return courier pickup / shipment.
+            </p>
+            <div className="mt-4">
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
+                Seller Approval Notes (Optional)
+              </label>
+              <textarea
+                rows={3}
+                value={approveNotes}
+                onChange={(e) => setApproveNotes(e.target.value)}
+                placeholder="Enter approval notes or instructions..."
+                className="mt-1 w-full rounded-md border border-gray-300 p-2 text-sm focus:border-emerald-600 focus:outline-none dark:border-gray-700 dark:bg-gray-800"
+              />
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowApproveModal(false)}
+                className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={actionLoading}
+                onClick={handleApprove}
+                className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {actionLoading ? 'Approving...' : 'Confirm Approval'}
               </button>
             </div>
           </div>

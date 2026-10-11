@@ -28,6 +28,7 @@ import type {
 } from '@/features/returns/types/return.types'
 import { returnStatusLabel, returnStatusTone } from './ReturnsPage'
 import { formatDateTime } from '@/lib/datetime'
+import { getApiErrorMessage } from '@/lib/api/errors'
 
 const conditionOptions: Array<{ label: string; value: InspectionCondition }> = [
   { label: 'Intact / Original Condition', value: 'INTACT' },
@@ -59,10 +60,10 @@ const dispositionCategoryOptions: Array<{ label: string; value: DispositionCateg
   { label: 'Authenticity Hold (Non-restockable)', value: 'AUTHENTICITY_HOLD' },
 ]
 
-export function ReturnDetailsPage() {
+export function ReturnDetailsPage({ returnId: propReturnId }: { returnId?: string } = {}) {
   const router = useRouter()
   const params = useParams()
-  const returnId = String(params?.returnId || '')
+  const returnId = propReturnId || String(params?.returnId || '')
 
   const [returnDoc, setReturnDoc] = useState<SellerReturn | null>(null)
   const [loading, setLoading] = useState(true)
@@ -107,7 +108,10 @@ export function ReturnDetailsPage() {
 
   const load = useCallback(
     (signal?: AbortSignal) => {
-      if (!returnId) return
+      if (!returnId) {
+        setLoading(false)
+        return
+      }
       setLoading(true)
       setError('')
       returnService
@@ -117,7 +121,7 @@ export function ReturnDetailsPage() {
         })
         .catch((err) => {
           if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') return
-          setError(err instanceof Error ? err.message : 'Unable to load return details')
+          setError(getApiErrorMessage(err, 'Unable to load return details'))
         })
         .finally(() => {
           setLoading(false)
@@ -141,7 +145,7 @@ export function ReturnDetailsPage() {
       setShowReviewModal(false)
       setActionSuccess('Return request has been acknowledged and marked Under Review.')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to review return')
+      setError(getApiErrorMessage(err, 'Failed to review return'))
     } finally {
       setActionLoading(false)
     }
@@ -156,7 +160,7 @@ export function ReturnDetailsPage() {
       setShowReceiveModal(false)
       setActionSuccess('Return item has been marked as Received at seller facility.')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to mark return as received')
+      setError(getApiErrorMessage(err, 'Failed to mark return as received'))
     } finally {
       setActionLoading(false)
     }
@@ -170,7 +174,7 @@ export function ReturnDetailsPage() {
       setReturnDoc(updated)
       setActionSuccess('Return is now ready for quality inspection.')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update inspection status')
+      setError(getApiErrorMessage(err, 'Failed to update inspection status'))
     } finally {
       setActionLoading(false)
     }
@@ -204,7 +208,7 @@ export function ReturnDetailsPage() {
           : 'Inspection Failed recorded. You may now raise a dispute if required.'
       )
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit inspection')
+      setError(getApiErrorMessage(err, 'Failed to submit inspection'))
     } finally {
       setActionLoading(false)
     }
@@ -233,7 +237,7 @@ export function ReturnDetailsPage() {
       setShowDisputeModal(false)
       setActionSuccess('Dispute raised successfully. Case has been routed for Admin review.')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to raise dispute')
+      setError(getApiErrorMessage(err, 'Failed to raise dispute'))
     } finally {
       setActionLoading(false)
     }
@@ -256,7 +260,7 @@ export function ReturnDetailsPage() {
       setShowDispositionModal(false)
       setActionSuccess('Inventory disposition recorded successfully. Restockable items returned to inventory.')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to record disposition')
+      setError(getApiErrorMessage(err, 'Failed to record disposition'))
     } finally {
       setActionLoading(false)
     }
@@ -444,12 +448,12 @@ export function ReturnDetailsPage() {
                       <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100">{title}</h4>
                       <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">SKU: {sku}</p>
                       <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-600 dark:text-gray-300">
-                        <span>Quantity: <strong className="text-gray-900 dark:text-gray-100">{item.quantity}</strong></span>
-                        <span>Unit Price: <strong className="text-gray-900 dark:text-gray-100">₹{item.unitPrice}</strong></span>
-                        <span>Line Total: <strong className="text-gray-900 dark:text-gray-100">₹{item.lineTotal}</strong></span>
-                        {item.disposition && (
+                        <span>Quantity: <strong className="text-gray-900 dark:text-gray-100">{item.quantity ?? 1}</strong></span>
+                        <span>Unit Price: <strong className="text-gray-900 dark:text-gray-100">₹{item.unitPrice ?? 0}</strong></span>
+                        <span>Line Total: <strong className="text-gray-900 dark:text-gray-100">₹{item.lineTotal ?? 0}</strong></span>
+                        {item.disposition && Boolean(item.disposition.disposition) && (
                           <span className="rounded bg-emerald-50 px-2 py-0.5 text-xs text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 font-medium">
-                            Disposition: {item.disposition.disposition} (Restocked: {item.disposition.restockableQuantity}, Non-restockable: {item.disposition.nonRestockableQuantity})
+                            Disposition: {item.disposition.disposition} (Restocked: {item.disposition.restockableQuantity ?? 0}, Non-restockable: {item.disposition.nonRestockableQuantity ?? 0})
                           </span>
                         )}
                       </div>
@@ -533,7 +537,7 @@ export function ReturnDetailsPage() {
           )}
 
           {/* Inspection Details Section */}
-          {returnDoc.inspection && (
+          {returnDoc.inspection && Boolean(returnDoc.inspection.result || returnDoc.inspection.inspectedAt) && (
             <div className="panel p-5 border-l-4 border-l-purple-500">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 flex items-center gap-2">
@@ -547,7 +551,7 @@ export function ReturnDetailsPage() {
                       : 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300'
                   }`}
                 >
-                  {returnDoc.inspection.result}
+                  {returnDoc.inspection.result || 'Pending'}
                 </span>
               </div>
 
@@ -604,7 +608,7 @@ export function ReturnDetailsPage() {
           )}
 
           {/* Inventory Disposition Section */}
-          {returnDoc.disposition && (
+          {returnDoc.disposition && Boolean(returnDoc.disposition.status) && (
             <div className="panel p-5 border-l-4 border-l-emerald-600">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 flex items-center gap-2">
@@ -653,7 +657,7 @@ export function ReturnDetailsPage() {
           )}
 
           {/* Dispute Details Section */}
-          {returnDoc.dispute && (
+          {returnDoc.dispute && Boolean(returnDoc.dispute.reason || returnDoc.dispute.disputedAt || returnDoc.status === 'DISPUTED') && (
             <div className="panel p-5 border-l-4 border-l-rose-600">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold uppercase tracking-wider text-rose-600 dark:text-rose-400 flex items-center gap-2">
@@ -668,7 +672,7 @@ export function ReturnDetailsPage() {
               <div className="mt-3 text-xs">
                 <span className="block font-medium text-gray-500">Dispute Reason</span>
                 <span className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
-                  {returnStatusLabel(returnDoc.dispute.reason)}
+                  {returnDoc.dispute.reason ? returnStatusLabel(returnDoc.dispute.reason) : 'N/A'}
                 </span>
               </div>
 

@@ -11,7 +11,7 @@ import type { UserProfile, VendorProfile } from '@/features/profile/types/profil
 export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated' | 'seller-pending' | 'seller-rejected' | 'seller-suspended'
 type AuthContextValue = { user?: UserProfile; vendor?: VendorProfile; status: AuthStatus; error?: string; refresh: () => Promise<void>; logout: () => Promise<void> }
 const AuthContext = createContext<AuthContextValue | null>(null)
-const sellerPaths = ['/dashboard', '/products', '/inventory', '/orders', '/finance', '/reviews', '/analytics', '/store', '/verification', '/notifications', '/support', '/settings', '/profile']
+const sellerPaths = ['/dashboard', '/products', '/inventory', '/orders', '/returns', '/finance', '/reviews', '/analytics', '/store', '/verification', '/notifications', '/support', '/settings', '/profile']
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname()

@@ -7,7 +7,7 @@ import { managementNavigation, workspaceNavigation } from '@/config/navigation'
 import { api } from '@/api'
 import { useAuth } from '@/providers/auth-provider'
 
-const titles: Record<string, string> = { '/dashboard': 'Overview', '/products': 'Products', '/inventory': 'Inventory', '/orders': 'Orders', '/finance': 'Finance', '/reviews': 'Reviews', '/analytics': 'Analytics', '/store': 'My Store', '/verification': 'Verification', '/notifications': 'Notifications', '/support': 'Support', '/settings': 'Settings', '/profile': 'Profile' }
+const titles: Record<string, string> = { '/dashboard': 'Overview', '/products': 'Products', '/inventory': 'Inventory', '/orders': 'Orders', '/returns': 'Returns', '/finance': 'Finance', '/reviews': 'Reviews', '/analytics': 'Analytics', '/store': 'My Store', '/verification': 'Verification', '/notifications': 'Notifications', '/support': 'Support', '/settings': 'Settings', '/profile': 'Profile' }
 
 export function SellerShell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
@@ -43,7 +43,7 @@ export function SellerShell({ children }: { children: ReactNode }) {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const title = titles[pathname] || (pathname.startsWith('/products/') ? 'Product detail' : pathname.startsWith('/orders/') ? 'Order detail' : 'Seller Studio')
+  const title = titles[pathname] || (pathname.startsWith('/products/') ? 'Product detail' : pathname.startsWith('/orders/') ? 'Order detail' : pathname.startsWith('/returns/') ? 'Return detail' : 'Seller Studio')
   const navigate = (href: string) => {
     setOpen(false)
     setSidebarMenuOpen(false)

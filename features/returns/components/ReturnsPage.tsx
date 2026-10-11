@@ -34,7 +34,8 @@ const returnStatusOptions: Array<{ label: string; value?: SellerReturnStatus }> 
   { label: 'Disputed', value: 'DISPUTED' },
 ]
 
-export const returnStatusTone = (status: SellerReturnStatus | string): string => {
+export const returnStatusTone = (status?: SellerReturnStatus | string | null): string => {
+  if (!status) return 'neutral'
   switch (status) {
     case 'INSPECTION_PASSED':
     case 'DISPOSITION_COMPLETED':
@@ -59,7 +60,8 @@ export const returnStatusTone = (status: SellerReturnStatus | string): string =>
   }
 }
 
-export const returnStatusLabel = (status: string): string => {
+export const returnStatusLabel = (status?: string | null): string => {
+  if (!status || typeof status !== 'string') return 'N/A'
   return status
     .replaceAll('_', ' ')
     .toLowerCase()
@@ -196,26 +198,26 @@ export function ReturnsPage() {
         {error && <ErrorState error={error} onRetry={() => load()} />}
 
         {loading ? (
-          <TableSkeleton rows={5} columns={8} />
+          <TableSkeleton rows={5} columns={9} />
         ) : returns.length === 0 ? (
           <EmptyState
             title="No returns found"
             description={search || filter ? 'No returns match your active filters.' : 'There are no customer returns for your products at this time.'}
           />
         ) : (
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-gray-200 text-xs font-semibold uppercase text-gray-500 dark:border-gray-800 dark:text-gray-400">
+          <div className="mt-4 w-full overflow-x-auto overscroll-x-contain pb-2">
+            <table className="w-full min-w-[980px] text-left text-sm border-collapse">
+              <thead className="border-b border-gray-200 text-xs font-semibold uppercase text-gray-500 dark:border-gray-800 dark:text-gray-400 bg-gray-50/50 dark:bg-gray-900/50">
                 <tr>
-                  <th className="py-3 px-3">Return #</th>
-                  <th className="py-3 px-3">Order #</th>
-                  <th className="py-3 px-3">Product</th>
-                  <th className="py-3 px-3">Qty</th>
-                  <th className="py-3 px-3">Type</th>
-                  <th className="py-3 px-3">Reason</th>
-                  <th className="py-3 px-3">Status</th>
-                  <th className="py-3 px-3">Requested Date</th>
-                  <th className="py-3 px-3 text-right">Action</th>
+                  <th className="py-3 px-3.5 whitespace-nowrap">Return #</th>
+                  <th className="py-3 px-3.5 whitespace-nowrap">Order #</th>
+                  <th className="py-3 px-3.5 min-w-[180px]">Product</th>
+                  <th className="py-3 px-3.5 whitespace-nowrap text-center">Qty</th>
+                  <th className="py-3 px-3.5 whitespace-nowrap">Type</th>
+                  <th className="py-3 px-3.5 min-w-[150px]">Reason</th>
+                  <th className="py-3 px-3.5 whitespace-nowrap">Status</th>
+                  <th className="py-3 px-3.5 whitespace-nowrap">Requested Date</th>
+                  <th className="py-3 px-3.5 whitespace-nowrap text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -230,41 +232,45 @@ export function ReturnsPage() {
                       onClick={() => openReturn(ret._id)}
                       className="cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
                     >
-                      <td className="py-3 px-3 font-semibold text-gray-900 dark:text-gray-100">
+                      <td className="py-3.5 px-3.5 whitespace-nowrap font-mono text-xs font-semibold text-gray-900 dark:text-gray-100">
                         {ret.returnNumber}
                       </td>
-                      <td className="py-3 px-3 text-gray-600 dark:text-gray-300">
+                      <td className="py-3.5 px-3.5 whitespace-nowrap font-mono text-xs text-gray-600 dark:text-gray-300">
                         {ret.order?.orderNumber || '—'}
                       </td>
-                      <td className="py-3 px-3 max-w-xs truncate text-gray-800 dark:text-gray-200 font-medium">
-                        {itemTitle}
-                        {(ret.items || []).length > 1 && (
-                          <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">
-                            +{ret.items.length - 1} more
-                          </span>
-                        )}
+                      <td className="py-3.5 px-3.5 max-w-[240px] text-gray-800 dark:text-gray-200 font-medium" title={itemTitle}>
+                        <div className="truncate">
+                          {itemTitle}
+                          {(ret.items || []).length > 1 && (
+                            <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">
+                              +{ret.items.length - 1} more
+                            </span>
+                          )}
+                        </div>
                       </td>
-                      <td className="py-3 px-3 text-gray-600 dark:text-gray-300">
+                      <td className="py-3.5 px-3.5 whitespace-nowrap text-center text-gray-700 dark:text-gray-300 font-semibold">
                         {totalQty}
                       </td>
-                      <td className="py-3 px-3 text-gray-600 dark:text-gray-300">
+                      <td className="py-3.5 px-3.5 whitespace-nowrap text-gray-600 dark:text-gray-300">
                         <span className="text-xs uppercase font-medium tracking-wider bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
                           {ret.type || 'RETURN'}
                         </span>
                       </td>
-                      <td className="py-3 px-3 text-gray-600 dark:text-gray-300 max-w-xs truncate">
-                        {returnStatusLabel(ret.reason || 'Customer request')}
+                      <td className="py-3.5 px-3.5 max-w-[200px] text-gray-600 dark:text-gray-300" title={returnStatusLabel(ret.reason || 'Customer request')}>
+                        <div className="truncate">
+                          {returnStatusLabel(ret.reason || 'Customer request')}
+                        </div>
                       </td>
-                      <td className="py-3 px-3">
+                      <td className="py-3.5 px-3.5 whitespace-nowrap">
                         <StatusBadge tone={returnStatusTone(ret.status)}>
                           {returnStatusLabel(ret.status)}
                         </StatusBadge>
                       </td>
-                      <td className="py-3 px-3 text-xs text-gray-500 dark:text-gray-400">
+                      <td className="py-3.5 px-3.5 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">
                         {ret.requestedAt ? formatDateTime(ret.requestedAt) : '—'}
                       </td>
-                      <td className="py-3 px-3 text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-2">
+                      <td className="py-3.5 px-3.5 whitespace-nowrap text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="inline-flex items-center justify-end gap-1.5 shrink-0">
                           {ret.status === 'REQUESTED' && (
                             <button
                               type="button"

@@ -2,6 +2,9 @@ export type SellerReturnStatus =
   | 'REQUESTED'
   | 'UNDER_REVIEW'
   | 'APPROVED'
+  | 'PICKUP_SCHEDULED'
+  | 'PICKED_UP'
+  | 'IN_TRANSIT'
   | 'RETURN_RECEIVED'
   | 'INSPECTION_PENDING'
   | 'INSPECTING'
@@ -18,6 +21,53 @@ export type SellerReturnStatus =
   | 'REJECTED_AFTER_INSPECTION'
   | 'COMPLETED'
   | 'CANCELLED'
+
+export type ReturnShipmentStatus =
+  | 'PREPARED'
+  | 'PICKUP_SCHEDULED'
+  | 'PICKED_UP'
+  | 'IN_TRANSIT'
+  | 'OUT_FOR_DELIVERY'
+  | 'DELIVERED'
+  | 'FAILED'
+  | 'CANCELLED'
+  | 'RTO'
+
+export interface ReverseShipmentSnapshot {
+  _id: string
+  shipmentNumber?: string
+  returnId?: string
+  orderId?: string
+  vendorOrderId?: string | null
+  vendorId?: string
+  status: ReturnShipmentStatus | string
+  provider?: string
+  carrier?: string
+  trackingNumber?: string | null
+  carrierOrderId?: string | null
+  carrierShipmentId?: string | null
+  pickupAddress?: Record<string, any>
+  destinationAddress?: Record<string, any>
+  packageInfo?: {
+    weight?: number
+    dimensions?: { length?: number; width?: number; height?: number }
+  }
+  scheduledPickupDate?: string | null
+  actualPickupDate?: string | null
+  deliveredAt?: string | null
+  labelUrl?: string | null
+  manifestUrl?: string | null
+  trackingUrl?: string | null
+  trackingHistory?: Array<{
+    status?: string
+    activity?: string
+    location?: string
+    timestamp?: string
+  }>
+  metadata?: Record<string, any>
+  createdAt?: string
+  updatedAt?: string
+}
 
 export type InspectionResult = 'PASSED' | 'FAILED'
 
@@ -168,6 +218,7 @@ export interface SellerReturn {
     replacementOrderNumber?: string | null
     createdAt?: string
   } | null
+  reverseShipment?: ReverseShipmentSnapshot | null
   createdAt?: string
   updatedAt?: string
 }

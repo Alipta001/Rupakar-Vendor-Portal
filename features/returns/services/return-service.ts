@@ -7,6 +7,7 @@ import type {
   SubmitInspectionPayload,
   RaiseDisputePayload,
   SubmitDispositionPayload,
+  ReverseShipmentSnapshot,
 } from '../types/return.types'
 
 export interface ListReturnsParams {
@@ -47,4 +48,7 @@ export const returnService = {
 
   submitDisposition: (id: string, payload: SubmitDispositionPayload): Promise<SellerReturn> =>
     api.post<SellerReturn>(`${endpoints.vendors.returns}/${id}/disposition`, payload),
+
+  getReverseShipment: (id: string, config?: { signal?: AbortSignal }): Promise<ReverseShipmentSnapshot | null> =>
+    api.get<ReverseShipmentSnapshot | null>(`${endpoints.vendors.returns}/${id}/reverse-shipment`, { signal: config?.signal }),
 }

@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   CheckCircle2,
   Clock,
+  Download,
   ExternalLink,
   Info,
   Package,
@@ -14,6 +15,7 @@ import {
   PackagePlus,
   RotateCcw,
   ShieldAlert,
+  Truck,
   XCircle,
 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -368,7 +370,25 @@ export function ReturnDetailsPage({ returnId: propReturnId }: { returnId?: strin
             </button>
           )}
 
-          {returnDoc.status === 'APPROVED' && (
+          {/* Reverse carrier pickup status badge when return is approved or in transit */}
+          {returnDoc.status === 'APPROVED' && returnDoc.reverseShipment && returnDoc.reverseShipment.status !== 'DELIVERED' && (
+            <div className="inline-flex items-center gap-2 rounded-md bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+              <Truck className="h-4 w-4 shrink-0 text-amber-600" />
+              <span>Reverse Pickup Active ({returnDoc.reverseShipment.status?.replaceAll('_', ' ')})</span>
+            </div>
+          )}
+
+          {['PICKUP_SCHEDULED', 'PICKED_UP', 'IN_TRANSIT'].includes(returnDoc.status) &&
+            (!returnDoc.reverseShipment || returnDoc.reverseShipment.status !== 'DELIVERED') && (
+            <div className="inline-flex items-center gap-2 rounded-md bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-800 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+              <Truck className="h-4 w-4 shrink-0 text-blue-600 animate-pulse" />
+              <span>Carrier In Transit &bull; Awaiting Delivery</span>
+            </div>
+          )}
+
+          {/* Only allow Mark Return Received if no carrier reverse shipment exists, or carrier delivered the return */}
+          {['APPROVED', 'PICKUP_SCHEDULED', 'PICKED_UP', 'IN_TRANSIT'].includes(returnDoc.status) &&
+            (!returnDoc.reverseShipment || returnDoc.reverseShipment.status === 'DELIVERED') && (
             <button
               type="button"
               onClick={() => setShowReceiveModal(true)}
@@ -568,6 +588,112 @@ export function ReturnDetailsPage({ returnId: propReturnId }: { returnId?: strin
             </div>
           )}
 
+          {/* Phase 8: Reverse Logistics & Carrier Tracking */}
+          {returnDoc.reverseShipment && (
+            <div className="panel p-5 border-l-4 border-l-amber-500 bg-amber-50/15 dark:bg-amber-950/20">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Truck className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-900 dark:text-gray-100">
+                    Reverse Shipment &amp; Courier Logistics
+                  </h3>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="rounded bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800 dark:bg-amber-900/60 dark:text-amber-200">
+                    {returnDoc.reverseShipment.status?.replaceAll('_', ' ')}
+                  </span>
+                  {returnDoc.reverseShipment.provider && (
+                    <span className="rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                      {returnDoc.reverseShipment.provider}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Carrier Errors Alert if any */}
+              {Boolean(returnDoc.reverseShipment.metadata?.awbError || returnDoc.reverseShipment.metadata?.pickupError) && (
+                <div className="mt-3 rounded-md bg-amber-100/80 p-3 text-xs text-amber-900 dark:bg-amber-900/40 dark:text-amber-200 flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+                  <div>
+                    <span className="font-semibold">Courier dispatch notice:</span>{' '}
+                    {String(returnDoc.reverseShipment.metadata?.awbError || returnDoc.reverseShipment.metadata?.pickupError)}
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+                <div className="rounded border border-gray-200 dark:border-gray-800 p-3 bg-white dark:bg-gray-900">
+                  <span className="block text-gray-500 font-medium">Carrier / Service</span>
+                  <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    {returnDoc.reverseShipment.carrier || 'Pending Assignment'}
+                  </span>
+                </div>
+                <div className="rounded border border-gray-200 dark:border-gray-800 p-3 bg-white dark:bg-gray-900">
+                  <span className="block text-gray-500 font-medium">Tracking # / AWB</span>
+                  <span className="text-sm font-bold text-amber-600 dark:text-amber-400">
+                    {returnDoc.reverseShipment.trackingNumber || 'Pending AWB'}
+                  </span>
+                </div>
+                <div className="rounded border border-gray-200 dark:border-gray-800 p-3 bg-white dark:bg-gray-900">
+                  <span className="block text-gray-500 font-medium">Scheduled Pickup</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {returnDoc.reverseShipment.scheduledPickupDate
+                      ? formatDateTime(returnDoc.reverseShipment.scheduledPickupDate)
+                      : 'Scheduled upon AWB'}
+                  </span>
+                </div>
+                <div className="rounded border border-gray-200 dark:border-gray-800 p-3 bg-white dark:bg-gray-900">
+                  <span className="block text-gray-500 font-medium">Shipment ID</span>
+                  <span className="text-xs font-mono text-gray-700 dark:text-gray-300">
+                    {returnDoc.reverseShipment.shipmentNumber || returnDoc.reverseShipment._id}
+                  </span>
+                </div>
+              </div>
+
+              {/* Package Info & Action Links */}
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-gray-200 dark:border-gray-800 text-xs">
+                <div className="flex items-center gap-4 text-gray-600 dark:text-gray-400">
+                  {Boolean(returnDoc.reverseShipment.packageInfo?.weight) && (
+                    <span>Weight: <strong className="text-gray-900 dark:text-gray-100">{returnDoc.reverseShipment.packageInfo?.weight} kg</strong></span>
+                  )}
+                  {Boolean(returnDoc.reverseShipment.packageInfo?.dimensions) && (
+                    <span>
+                      Dimensions:{' '}
+                      <strong className="text-gray-900 dark:text-gray-100">
+                        {returnDoc.reverseShipment.packageInfo?.dimensions?.length} &times;{' '}
+                        {returnDoc.reverseShipment.packageInfo?.dimensions?.width} &times;{' '}
+                        {returnDoc.reverseShipment.packageInfo?.dimensions?.height} cm
+                      </strong>
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {returnDoc.reverseShipment.labelUrl && (
+                    <a
+                      href={returnDoc.reverseShipment.labelUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-md bg-white border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200"
+                    >
+                      <Download className="h-3.5 w-3.5" /> Shipping Label
+                    </a>
+                  )}
+                  {returnDoc.reverseShipment.trackingUrl && (
+                    <a
+                      href={returnDoc.reverseShipment.trackingUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-amber-700"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" /> Live Carrier Tracking
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Inspection Details Section */}
           {returnDoc.inspection && Boolean(returnDoc.inspection.result || returnDoc.inspection.inspectedAt) && (
             <div className="panel p-5 border-l-4 border-l-purple-500">
@@ -762,6 +888,32 @@ export function ReturnDetailsPage({ returnId: propReturnId }: { returnId?: strin
                   <span className="absolute -left-6 top-1 h-2.5 w-2.5 rounded-full bg-blue-600 ring-4 ring-white dark:ring-gray-900" />
                   <p className="text-xs font-medium text-gray-900 dark:text-gray-100">Under Seller Review</p>
                   <p className="text-xs text-gray-400">{formatDateTime(returnDoc.reviewedAt)}</p>
+                </div>
+              )}
+
+              {/* Approved */}
+              {returnDoc.approvedAt && (
+                <div className="relative">
+                  <span className="absolute -left-6 top-1 h-2.5 w-2.5 rounded-full bg-emerald-600 ring-4 ring-white dark:ring-gray-900" />
+                  <p className="text-xs font-medium text-gray-900 dark:text-gray-100">Return Approved</p>
+                  <p className="text-xs text-gray-400">{formatDateTime(returnDoc.approvedAt)}</p>
+                </div>
+              )}
+
+              {/* Reverse Shipment */}
+              {returnDoc.reverseShipment && (
+                <div className="relative">
+                  <span className="absolute -left-6 top-1 h-2.5 w-2.5 rounded-full bg-amber-500 ring-4 ring-white dark:ring-gray-900" />
+                  <p className="text-xs font-medium text-gray-900 dark:text-gray-100">
+                    Reverse Pickup ({returnDoc.reverseShipment.status?.replaceAll('_', ' ')})
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    {returnDoc.reverseShipment.actualPickupDate
+                      ? formatDateTime(returnDoc.reverseShipment.actualPickupDate)
+                      : returnDoc.reverseShipment.scheduledPickupDate
+                      ? `Pickup: ${formatDateTime(returnDoc.reverseShipment.scheduledPickupDate)}`
+                      : formatDateTime(returnDoc.reverseShipment.createdAt || '')}
+                  </p>
                 </div>
               )}
 

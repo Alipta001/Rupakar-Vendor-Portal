@@ -25,6 +25,9 @@ const returnStatusOptions: Array<{ label: string; value?: SellerReturnStatus }> 
   { label: 'Requested', value: 'REQUESTED' },
   { label: 'Under review', value: 'UNDER_REVIEW' },
   { label: 'Approved', value: 'APPROVED' },
+  { label: 'Pickup scheduled', value: 'PICKUP_SCHEDULED' },
+  { label: 'Picked up', value: 'PICKED_UP' },
+  { label: 'In transit', value: 'IN_TRANSIT' },
   { label: 'Received', value: 'RETURN_RECEIVED' },
   { label: 'Inspection pending', value: 'INSPECTION_PENDING' },
   { label: 'Inspection passed', value: 'INSPECTION_PASSED' },
@@ -50,6 +53,9 @@ export const returnStatusTone = (status?: SellerReturnStatus | string | null): s
       return 'danger'
     case 'REQUESTED':
     case 'UNDER_REVIEW':
+    case 'PICKUP_SCHEDULED':
+    case 'PICKED_UP':
+    case 'IN_TRANSIT':
     case 'RETURN_RECEIVED':
     case 'INSPECTION_PENDING':
     case 'DISPOSITION_PENDING':

@@ -1,6 +1,6 @@
-import { BarChart3, Bell, Box, FileText, LayoutDashboard, LifeBuoy, Package, Settings, ShieldCheck, ShoppingBag, Store, Wallet, type LucideIcon } from 'lucide-react'
+import { BarChart3, Bell, Box, FileText, LayoutDashboard, LifeBuoy, Package, RotateCcw, Settings, ShieldCheck, ShoppingBag, Store, Wallet, type LucideIcon } from 'lucide-react'
 
-export type SellerRoute = '/dashboard' | '/products' | '/inventory' | '/orders' | '/finance' | '/reviews' | '/analytics' | '/store' | '/verification' | '/notifications' | '/support' | '/settings' | '/profile'
+export type SellerRoute = '/dashboard' | '/products' | '/inventory' | '/orders' | '/returns' | '/finance' | '/reviews' | '/analytics' | '/store' | '/verification' | '/notifications' | '/support' | '/settings' | '/profile'
 export type NavigationItem = { label: string; icon: LucideIcon; href: SellerRoute; count?: string }
 
 export const workspaceNavigation: NavigationItem[] = [
@@ -8,6 +8,7 @@ export const workspaceNavigation: NavigationItem[] = [
   { label: 'Products', icon: Package, href: '/products' },
   { label: 'Inventory', icon: Box, href: '/inventory' },
   { label: 'Orders', icon: ShoppingBag, href: '/orders' },
+  { label: 'Returns', icon: RotateCcw, href: '/returns' },
   { label: 'Finance', icon: Wallet, href: '/finance' },
   { label: 'Reviews', icon: FileText, href: '/reviews' },
   { label: 'Analytics', icon: BarChart3, href: '/analytics' },

@@ -112,22 +112,28 @@ export function OrderDetailsPage({ setView: _setView }: { setView: (view: 'order
 
   const address = useMemo(() => order?.parent?.shippingAddressSnapshot || {}, [order])
 
+  const isReplacementOrder = Boolean(
+    order?.isReplacement ||
+    order?.replacement?.isReplacement ||
+    order?.financialSnapshot?.isReplacement
+  )
+
   const validAction = useMemo(() => {
     if (!order) return null
     if (['PAID', 'CONFIRMED'].includes(order.status)) {
-      return { label: 'Start processing', action: 'process' as const }
+      return { label: isReplacementOrder ? 'Start processing replacement' : 'Start processing', action: 'process' as const }
     }
     if (order.status === 'PROCESSING') {
-      return { label: 'Pack order', action: 'pack' as const }
+      return { label: isReplacementOrder ? 'Pack replacement' : 'Pack order', action: 'pack' as const }
     }
     if (order.status === 'PACKED') {
       return { label: 'Ready to Ship', action: 'readyToShip' as const }
     }
-    if (['READY_TO_SHIP', 'PICKUP_REQUESTED'].includes(order.status)) {
+    if (!isReplacementOrder && ['READY_TO_SHIP', 'PICKUP_REQUESTED'].includes(order.status)) {
       return { label: 'Handover / Ship', action: 'ship' as const }
     }
     return null
-  }, [order])
+  }, [order, isReplacementOrder])
 
   const advance = async () => {
     if (!order || !validAction || saving) return
@@ -294,6 +300,38 @@ export function OrderDetailsPage({ setView: _setView }: { setView: (view: 'order
             <p className="mt-2 text-lg font-semibold text-[#1E1A17]">{date(order.updatedAt)}</p>
           </div>
         </div>
+
+        {(isReplacementOrder || order.replacement?.isReplacement) && (
+          <div className="mt-6 rounded-xl border border-blue-200 bg-blue-50/50 p-5">
+            <div className="flex items-center justify-between pb-3 border-b border-blue-100">
+              <div className="flex items-center gap-2 text-blue-900 font-semibold">
+                <RefreshCw className="h-5 w-5 text-blue-600" />
+                <span>Replacement Order Fulfillment</span>
+              </div>
+              <span className="rounded bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-800">
+                Zero Additional Charge
+              </span>
+            </div>
+            <div className="mt-3 grid gap-3 sm:grid-cols-4 text-xs">
+              <div>
+                <span className="text-gray-500 block">Replacement Order #</span>
+                <span className="font-semibold text-gray-900">{order.parent?.orderNumber || order.parentOrderId}</span>
+              </div>
+              <div>
+                <span className="text-gray-500 block">Original Return #</span>
+                <span className="font-semibold text-gray-900">{order.replacement?.returnNumber || order.financialSnapshot?.returnId || '—'}</span>
+              </div>
+              <div>
+                <span className="text-gray-500 block">Original Order #</span>
+                <span className="font-semibold text-gray-900">{order.replacement?.originalOrderNumber || order.financialSnapshot?.originalOrderId || '—'}</span>
+              </div>
+              <div>
+                <span className="text-gray-500 block">Fulfillment Phase</span>
+                <span className="font-semibold text-blue-700">Phase 7A: Local Seller Fulfillment</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {order.status === 'PACKED' && (
           <div className="mt-6 rounded-xl border border-[#E6D8C4] bg-[#FCF8F3] p-5">

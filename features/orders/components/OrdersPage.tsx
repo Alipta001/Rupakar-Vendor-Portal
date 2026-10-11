@@ -123,9 +123,16 @@ export function OrdersPage({ setView: _setView, setSelected: _setSelected }: { s
                 {visible.map((order) => (
                   <tr key={order._id}>
                     <td>
-                      <button className="link-button" onClick={() => open(order._id)}>
-                        #{order._id.slice(-8).toUpperCase()}
-                      </button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <button className="link-button" onClick={() => open(order._id)}>
+                          #{order._id.slice(-8).toUpperCase()}
+                        </button>
+                        {(order.isReplacement || order.replacement?.isReplacement || order.financialSnapshot?.isReplacement) && (
+                          <span style={{ fontSize: '10px', fontWeight: 600, background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '4px', padding: '1px 5px' }}>
+                            Replacement
+                          </span>
+                        )}
+                      </div>
                       <small>{orderDate(order)}</small>
                     </td>
                     <td>

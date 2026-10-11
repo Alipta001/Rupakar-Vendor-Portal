@@ -24,13 +24,34 @@ export type VendorOrderStatus =
   | 'REFUNDED'
   | 'PARTIALLY_REFUNDED'
 export type VendorOrderItem = { productId: string; variantId: string; productName: string; sku: string; quantity: number; unitPrice: number; lineTotal: number; productSnapshot?: Record<string, string> }
-export type VendorOrderParent = { _id: string; paymentStatus: string; status: string; shippingAddressSnapshot?: Record<string, string>; createdAt?: string; updatedAt?: string }
+export type VendorOrderParent = { _id: string; orderNumber?: string; paymentStatus: string; status: string; paymentMethod?: string; financialSnapshot?: Record<string, any>; shippingAddressSnapshot?: Record<string, string>; createdAt?: string; updatedAt?: string }
 export type VendorOrder = {
   _id: string
   parentOrderId: string
   vendorId: string
   customerId: string
   status: VendorOrderStatus
+  isReplacement?: boolean
+  financialSnapshot?: {
+    isReplacement?: boolean
+    originalOrderId?: string
+    originalVendorOrderId?: string
+    returnId?: string
+    [key: string]: any
+  } | null
+  replacement?: {
+    isReplacement?: boolean
+    replacementId?: string
+    replacementNumber?: string
+    returnId?: string
+    returnNumber?: string
+    originalOrderId?: string
+    originalOrderNumber?: string
+    quantity?: number
+    status?: string
+    createdAt?: string
+    approvedAt?: string
+  } | null
   items: VendorOrderItem[]
   subtotal: number
   discount: number

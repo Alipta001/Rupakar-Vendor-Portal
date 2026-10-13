@@ -97,6 +97,76 @@ const query = (params: Record<string, string | number | undefined>) => {
   return value ? `?${value}` : ''
 }
 
+export type BulkRowError = {
+  field: string
+  message: string
+}
+
+export type BulkMatchedImage = {
+  filename: string
+  isPrimary: boolean
+  sortOrder: number
+}
+
+export type BulkRowResult = {
+  rowNumber: number
+  sku: string
+  name: string
+  category: string
+  price: number
+  stock: number
+  isValid: boolean
+  errors: BulkRowError[]
+  matchedImages: BulkMatchedImage[]
+  status: 'PENDING' | 'VALID' | 'INVALID' | 'SUBMITTED' | 'FAILED'
+  createdProductId?: string
+}
+
+export type BulkValidationResult = {
+  batchId: string
+  totalRows: number
+  validRowsCount: number
+  invalidRowsCount: number
+  extractionErrors: Array<{ filename: string; error: string }>
+  unmatchedImages: Array<{ filename: string; sku: string; size: number }>
+  rows: BulkRowResult[]
+}
+
+export type BulkSubmitResult = {
+  batchId: string
+  status: string
+  totalRows: number
+  submittedCount: number
+  failedCount: number
+  newlySubmitted: number
+  newlyFailed: number
+  rows: Array<{
+    rowNumber: number
+    sku: string
+    name: string
+    status: string
+    errors: BulkRowError[]
+    createdProductId?: string
+  }>
+}
+
+export type BulkBatchDetail = {
+  _id: string
+  batchId: string
+  vendorId: string
+  originalSpreadsheetName: string
+  originalZipName: string
+  status: 'VALIDATING' | 'VALIDATED' | 'SUBMITTING' | 'COMPLETED' | 'PARTIALLY_COMPLETED' | 'FAILED'
+  totalRows: number
+  validRowsCount: number
+  invalidRowsCount: number
+  submittedCount: number
+  failedCount: number
+  rows: BulkRowResult[]
+  createdAt: string
+  updatedAt: string
+}
+
 export const productService = {
   list: (params: { page?: number; limit?: number; status?: ProductStatus; search?: string } = {}, options?: { signal?: AbortSignal }) =>
     api.get<ProductPage>(`/vendor/products${query(params)}`, { signal: options?.signal }),
@@ -124,4 +194,41 @@ export const productService = {
   },
   categories: () => api.get<LookupPage<LookupItem>>('/categories?limit=100'),
   brands: () => api.get<LookupPage<LookupItem>>('/brands?limit=100'),
+  bulk: {
+    downloadTemplate: async (format: 'csv' | 'xlsx' = 'xlsx') => {
+      const res = await api.get<Blob>(`/vendor/products/bulk/template?format=${format}`, {
+        responseType: 'blob',
+      })
+      const blob = new Blob([res as any], {
+        type: format === 'csv' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `rupakar-product-upload-template.${format}`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    },
+    validate: (formData: FormData) => api.post<BulkValidationResult>('/vendor/products/bulk/validate', formData),
+    submit: (batchId: string, rowNumbers?: number[]) =>
+      api.post<BulkSubmitResult>('/vendor/products/bulk/submit', { batchId, rowNumbers }),
+    getBatch: (batchId: string) => api.get<BulkBatchDetail>(`/vendor/products/bulk/batches/${batchId}`),
+    listBatches: () => api.get<{ items: BulkBatchDetail[]; total: number }>('/vendor/products/bulk/batches'),
+    downloadErrorReport: async (batchId: string) => {
+      const res = await api.get<Blob>(`/vendor/products/bulk/batches/${batchId}/errors`, {
+        responseType: 'blob',
+      })
+      const blob = new Blob([res as any], { type: 'text/csv' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `bulk-upload-${batchId}-errors.csv`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    },
+  },
 }

@@ -7,7 +7,7 @@ import { managementNavigation, workspaceNavigation } from '@/config/navigation'
 import { api } from '@/api'
 import { useAuth } from '@/providers/auth-provider'
 
-const titles: Record<string, string> = { '/dashboard': 'Overview', '/products': 'Products', '/inventory': 'Inventory', '/orders': 'Orders', '/returns': 'Returns', '/finance': 'Finance', '/reviews': 'Reviews', '/analytics': 'Analytics', '/store': 'My Store', '/verification': 'Verification', '/notifications': 'Notifications', '/support': 'Support', '/settings': 'Settings', '/profile': 'Profile' }
+const titles: Record<string, string> = { '/dashboard': 'Overview', '/products': 'Products', '/products/bulk-upload': 'Bulk Product Upload', '/inventory': 'Inventory', '/orders': 'Orders', '/returns': 'Returns', '/finance': 'Finance', '/reviews': 'Reviews', '/analytics': 'Analytics', '/store': 'My Store', '/verification': 'Verification', '/notifications': 'Notifications', '/support': 'Support', '/settings': 'Settings', '/profile': 'Profile' }
 
 export function SellerShell({ children }: { children: ReactNode }) {
   const pathname = usePathname()

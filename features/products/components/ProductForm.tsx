@@ -487,6 +487,23 @@ export function ProductForm({ setView }: { setView: (view: View) => void }) {
         </div>
       )}
 
+      {!productId && (
+        <div style={{ marginBottom: '16px', padding: '12px 16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#475569' }}>
+            <Sparkles size={16} style={{ color: '#d97706' }} />
+            <span>Have multiple products to list? Use <strong>Bulk Upload</strong> with CSV and ZIP photo matching.</span>
+          </div>
+          <button
+            type="button"
+            className="secondary-button"
+            style={{ padding: '6px 14px', fontSize: '12px', fontWeight: 600 }}
+            onClick={() => router.push('/products/bulk-upload')}
+          >
+            Bulk upload products
+          </button>
+        </div>
+      )}
+
       <div className="product-editor">
         {/* Step Navigation Sidebar */}
         <aside className="editor-steps">

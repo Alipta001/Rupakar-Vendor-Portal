@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { ChevronLeft, ChevronRight, Filter, MoreHorizontal, Plus, Search } from 'lucide-react'
+import { ChevronLeft, ChevronRight, FileSpreadsheet, Filter, MoreHorizontal, Plus, Search } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { StatusBadge } from '@/components/ui/StatusBadge'
@@ -93,6 +93,7 @@ export function ProductsPage({ setView }: { setView: (view: View) => void }) {
   }, [load])
 
   const openNew = () => { setView('product-new'); router.push('/products/new') }
+  const openBulk = () => { router.push('/products/bulk-upload') }
   const openProduct = (id: string) => { setView('product-detail'); router.push(`/products/${id}`) }
   const pageCount = Math.max(1, Math.ceil(total / limit))
 
@@ -102,7 +103,14 @@ export function ProductsPage({ setView }: { setView: (view: View) => void }) {
         eyebrow="Catalog"
         title="Products"
         description="Manage your catalog, pricing, and approval status."
-        action={<button className="primary-button" onClick={openNew}><Plus /> Add product</button>}
+        action={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <button className="secondary-button" onClick={openBulk}>
+              <FileSpreadsheet className="w-4 h-4" /> Bulk upload
+            </button>
+            <button className="primary-button" onClick={openNew}><Plus /> Add product</button>
+          </div>
+        }
       />
       <div className="tabs">
         {statuses.map((item) => (
@@ -126,6 +134,7 @@ export function ProductsPage({ setView }: { setView: (view: View) => void }) {
             />
           </div>
           <button className="filter-button"><Filter /> Filters</button>
+          <button className="secondary-button" onClick={openBulk}><FileSpreadsheet className="w-4 h-4" /> Bulk upload</button>
           <button className="secondary-button" onClick={openNew}><Plus /> New product</button>
         </div>
 
